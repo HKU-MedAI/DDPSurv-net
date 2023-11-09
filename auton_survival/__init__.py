@@ -1,18 +1,19 @@
+r'''
 
+
+[![Build Status](https://travis-ci.org/autonlab/DeepSurvivalMachines.svg?branch=master)](https://travis-ci.org/autonlab/DeepSurvivalMachines)
+&nbsp;&nbsp;&nbsp;
 [![codecov](https://codecov.io/gh/autonlab/DeepSurvivalMachines/branch/master/graph/badge.svg?token=FU1HB5O92D)](https://codecov.io/gh/autonlab/DeepSurvivalMachines)
 &nbsp;&nbsp;&nbsp;
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 &nbsp;&nbsp;&nbsp;
 [![GitHub Repo stars](https://img.shields.io/github/stars/autonlab/auton-survival?style=social)](https://github.com/autonlab/auton-survival)
-&nbsp;&nbsp;&nbsp;
-![CI](https://github.com/autonlab/auton-survival/actions/workflows/ci.yml/badge.svg)
+
+<br>
+
 
 The `auton-survival` Package
 ---------------------------
-
-<img align=right style="align:right;" src="https://ndownloader.figshare.com/files/34052981" width=30%>
-
-<br>
 
 The python package `auton-survival` is repository of reusable utilities for projects
 involving censored Time-to-Event Data. `auton-survival` provides a flexible APIs 
@@ -23,22 +24,8 @@ counterfactual estimation, clustering and phenotyping and propensity adjusted ev
 <h3>• <a href="https://www.cs.cmu.edu/~chiragn/papers/auton_survival.pdf">White Paper</a> &nbsp;&nbsp; • <a href="https://autonlab.github.io/auton-survival/">Documentation</a> &nbsp;&nbsp; • <a href="https://nbviewer.org/github/autonlab/auton-survival/tree/master/examples/">Demo Notebooks</a></h3>
 
 
-# Contents
-
-
-
-#### 1. [What is Survival Analysis?](#what) 
-#### 2. [The Auton Survival Package](#package) 
-#### 3. [Survival Regression](#regression)
-#### 4. [Phenotyping and Knowledge Discovery](#phenotyping)
-#### 5. [Evaluation and Reporting](#evaluation)
-#### 6. [Dataset Loading and Preprocessing](#preprocess)
-#### 7. [Citing and References](#ref)
-#### 8. [Compatibility and Installation](#install)
-#### 9. [Contributing](#contrib)
-#### 10. [License](#license)
-
 <a id="what"></a>
+
 What is Survival Analysis?
 --------------------------
 
@@ -49,13 +36,9 @@ survival distribution, \( P(T>t|X) \). As compared to typical
 regression problems, Survival Analysis differs in two major ways:
 
 * The Event distribution, \( T \) has positive support, 
-  \( T in [0, \infty) \).
+  \( T in [0, inf) \).
 * There is presence of censoring (ie. a large number of instances of data are
   lost to follow up.)
-
-<p align="center"><img src="https://ndownloader.figshare.com/files/36038024" width=60% /></p>
-<p align="center"><b>Figure 1. Illustration of Censoring</b></p>
-
 
 <a id="package"></a>
 
@@ -99,11 +82,6 @@ model.fit(features, outcomes.time, outcomes.event)
 # Predict risk at specific time horizons.
 predictions = model.predict_risk(features, t=[8, 12, 16])
 ```
-
-<p align="center"><img src="https://ndownloader.figshare.com/files/36038027" width=60% /></p>
-<p align="center"><b>Figure 2. Violation of the Proportional Hazards Assumption</b></p>
-
-
 
 ### `auton_survival.estimators` [\[Demo Notebook\]](https://nbviewer.org/github/autonlab/auton-survival/blob/master/examples/Survival%20Regression%20with%20Auton-Survival.ipynb)</a>
 
@@ -168,8 +146,7 @@ Phenotyping and Knowledge Discovery
 
 `auton_survival.phenotyping` allows extraction of latent clusters or subgroups
 of patients that demonstrate similar outcomes. In the context of this package,
-we refer to this task as **phenotyping**. `auton_survival.phenotyping` provides
-the following phenotyping utilities:
+we refer to this task as **phenotyping**. `auton_survival.phenotyping` allows:
 
 - **Intersectional Phenotyping**: Recovers groups, or phenotypes, of individuals 
 over exhaustive combinations of user-specified categorical and numerical features. 
@@ -212,7 +189,7 @@ the `Deep Survival Machines` and `Deep Cox Mixtures` latent variable survival
 regression estimators using the `predict latent z` method. 
 
 ```python
-from auton_survival.models.dcm import DeepCoxMixtures
+from auton_survival.models.dcm import DeepCoxMixtures [\[Demo Notebook\]]
 
 # Instantiate a DCM Model with 3 phenogroups and a single hidden layer with size 100.
 model = DeepCoxMixtures(k = 3, layers = [100])
@@ -229,8 +206,6 @@ response to a specific intervention. Relies on the specially designed
 `auton_survival.models.cmhe.DeepCoxMixturesHeterogenousEffects` latent variable model.
 
 ```python
-from auton_survival.models.cmhe DeepCoxMixturesHeterogenousEffects
-
 # Instantiate the CMHE model
 model = DeepCoxMixturesHeterogenousEffects(random_seed=random_seed, k=k, g=g, layers=layers)
 
@@ -252,15 +227,6 @@ model = SurvivalVirtualTwins(horizon=365)
 # Infer the estimated counterfactual phenotype probability.
 phenotypes = model.fit_predict(features, outcomes.time, outcomes.event, interventions)
 ```
-
-DAG representations of the unsupervised, supervised, and counterfactual probabilitic
-phenotypers in auton-survival are shown in the below figure. *X* represents the
-covariates, *T* the time-to-event and *Z* is the phenotype to be inferred.
-
-<p align="center">A. Unsupervised Phenotyping &nbsp;&nbsp; B. Supervised Phenotyping &nbsp;&nbsp; C. Counterfactual Phenotyping</p>
-<p align="center"><img src="https://ndownloader.figshare.com/files/36056648" width=60%></p>
-<p align="center"><b>Figure 3. DAG Representations of the Phenotypers in <code>auton-survival</code></b></p>
-
 
 <a id="evaluation"></a>
 
@@ -291,16 +257,9 @@ score = survival_regression_metric(metric='brs', outcomes_train,
 ```
 
 - **Treatment Effect**: Used to compare treatment arms by computing the difference in the following metrics for treatment and control groups:
-    - **Time at Risk (TaR)**
+    - **Time at Risk** (TaR)
     - **Risk at Time**
-    - **Restricted Mean Survival Time (RMST)**
- 
-<p align="center">A. Time at Risk &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; B. RMST &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; C. Risk at Time </p>
-<p align="center">
-<img src="https://ndownloader.figshare.com/files/36056507" width=30%>
-<img src="https://ndownloader.figshare.com/files/36056534" width=30%>
-<img src="https://ndownloader.figshare.com/files/36056546" width=30%></p>
-<p align="center"><b>Figure 4. Graphical representation of the Treatment Effect Metrics</b></p>
+    - **Restricted Mean Survival Time** (RMST)
 
 ```python
 from auton_survival.metrics import survival_diff_metric
@@ -386,55 +345,17 @@ Citing and References
 an Open-Source Package for Regression, Counterfactual Estimation, Evaluation and Phenotyping with Censored Time-to-Event Data. arXiv (2022)](https://arxiv.org/abs/2204.07276)</a>
 
 ```
-  @article{nagpal2022auton,
-    title={auton-survival: an Open-Source Package for Regression, Counterfactual Estimation, Evaluation and Phenotyping with Censored Time-to-Event Data},
-    author={Nagpal, Chirag and Potosnak, Willa and Dubrawski, Artur},
-    journal={arXiv preprint arXiv:2204.07276},
-    year={2022}
+  @article{auton-survival,
+  title={auton-survival: an Open-Source Package for Regression, Counterfactual Estimation, Evaluation and Phenotyping with Censored Time-to-Event Data},
+  author={Nagpal, Chirag and Potosnak, Willa and Dubrawski, Artur},
+  year={2022},
+  publisher={arXiv}
   }
 ```
 
 **Additionally, `auton-survival` implements the following methodologies:**
 
-[2] [Counterfactual Phenotyping with Censored Time-to-Events. ACM Conference on Knowledge Discovery and Data Mining (KDD) 2022](https://arxiv.org/abs/2202.11089)</a>
-
-```
-  @article{nagpal2022counterfactual,
-  title={Counterfactual Phenotyping with Censored Time-to-Events},
-  author={Nagpal, Chirag and Goswami, Mononito and Dufendach, Keith and Dubrawski, Artur},
-  journal={arXiv preprint arXiv:2202.11089},
-  year={2022}
-  }
-```
-
-[3] [Deep Cox Mixtures for Survival Regression. Conference on Machine Learning for
-Healthcare (2021)](https://arxiv.org/abs/2101.06536)</a>
-
-```
-  @inproceedings{nagpal2021dcm,
-  title={Deep Cox mixtures for survival regression},
-  author={Nagpal, Chirag and Yadlowsky, Steve and Rostamzadeh, Negar and Heller, Katherine},
-  booktitle={Machine Learning for Healthcare Conference},
-  pages={674--708},
-  year={2021},
-  organization={PMLR}
-  }
-```
-
-[4] [Deep Parametric Time-to-Event Regression with Time-Varying Covariates. AAAI
-Spring Symposium (2021)](http://proceedings.mlr.press/v146/nagpal21a.html)</a>
-
-```
-  @InProceedings{pmlr-v146-nagpal21a,
-  title={Deep Parametric Time-to-Event Regression with Time-Varying Covariates},
-  author={Nagpal, Chirag and Jeanselme, Vincent and Dubrawski, Artur},
-  booktitle={Proceedings of AAAI Spring Symposium on Survival Prediction - Algorithms, Challenges, and Applications 2021},
-  series={Proceedings of Machine Learning Research},
-  publisher={PMLR},
-  }
-```
-
-[5] [Deep Survival Machines:
+[2] [Deep Survival Machines:
 Fully Parametric Survival Regression and
 Representation Learning for Censored Data with Competing Risks.
 IEEE Journal of Biomedical and Health Informatics (2021)](https://arxiv.org/abs/2003.01176)</a>
@@ -452,9 +373,43 @@ IEEE Journal of Biomedical and Health Informatics (2021)](https://arxiv.org/abs/
   }
 ```
 
+[3] [Deep Parametric Time-to-Event Regression with Time-Varying Covariates. AAAI
+Spring Symposium (2021)](http://proceedings.mlr.press/v146/nagpal21a.html)</a>
 
+```
+  @InProceedings{pmlr-v146-nagpal21a,
+  title={Deep Parametric Time-to-Event Regression with Time-Varying Covariates},
+  author={Nagpal, Chirag and Jeanselme, Vincent and Dubrawski, Artur},
+  booktitle={Proceedings of AAAI Spring Symposium on Survival Prediction - Algorithms, Challenges, and Applications 2021},
+  series={Proceedings of Machine Learning Research},
+  publisher={PMLR},
+  }
+```
 
+[4] [Deep Cox Mixtures for Survival Regression. Conference on Machine Learning for
+Healthcare (2021)](https://arxiv.org/abs/2101.06536)</a>
 
+```
+  @inproceedings{nagpal2021dcm,
+  title={Deep Cox mixtures for survival regression},
+  author={Nagpal, Chirag and Yadlowsky, Steve and Rostamzadeh, Negar and Heller, Katherine},
+  booktitle={Machine Learning for Healthcare Conference},
+  pages={674--708},
+  year={2021},
+  organization={PMLR}
+  }
+```
+
+[5] [Counterfactual Phenotyping with Censored Time-to-Events (2022)](https://arxiv.org/abs/2202.11089)</a>
+
+```
+  @article{nagpal2022counterfactual,
+  title={Counterfactual Phenotyping with Censored Time-to-Events},
+  author={Nagpal, Chirag and Goswami, Mononito and Dufendach, Keith and Dubrawski, Artur},
+  journal={arXiv preprint arXiv:2202.11089},
+  year={2022}
+  }
+```
 
 <a id="install"></a>
 
@@ -510,3 +465,10 @@ SOFTWARE.
 
 <br><br><br><br><br>
 <br><br><br><br><br>
+
+'''
+
+from .models.dsm import DeepSurvivalMachines
+from .models.dcm import DeepCoxMixtures
+from .models.cph import DeepCoxPH, DeepRecurrentCoxPH
+from .models.cmhe import DeepCoxMixturesHeterogenousEffects
