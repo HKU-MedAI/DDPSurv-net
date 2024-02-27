@@ -134,7 +134,7 @@ def train_dpsm(model,
                           e_train_,
                           t_valid_,
                           e_valid_,
-                          n_iter=10000,
+                          n_iter=1000,
                           lr=1e-2,
                           thres=1e-4)
 
