@@ -11,7 +11,7 @@ The `auton-survival` Package
 ---------------------------
 
 <img align=right style="align:right;" src="https://ndownloader.figshare.com/files/34052981" width=30%>
-
+'xingnanwangfuying'
 <br>
 
 The python package `auton-survival` is repository of reusable utilities for projects
