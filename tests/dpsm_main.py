@@ -43,3 +43,30 @@ models.append([[model.compute_nll(x_val, t_val, e_val), model]])
 
 best_model = min(models)
 model = best_model[0][1]
+
+out_risk = model.predict_risk(x_test, times)
+out_survival = model.predict_survival(x_test, times)
+
+from sksurv.metrics import concordance_index_ipcw, brier_score, cumulative_dynamic_auc
+
+cis = []
+brs = []
+
+et_train = np.array([(e_train[i], t_train[i]) for i in range(len(e_train))],
+                 dtype = [('e', bool), ('t', float)])
+et_test = np.array([(e_test[i], t_test[i]) for i in range(len(e_test))],
+                 dtype = [('e', bool), ('t', float)])
+et_val = np.array([(e_val[i], t_val[i]) for i in range(len(e_val))],
+                 dtype = [('e', bool), ('t', float)])
+
+for i, _ in enumerate(times):
+    cis.append(concordance_index_ipcw(et_train, et_test, out_risk[:, i], times[i])[0])
+brs.append(brier_score(et_train, et_test, out_survival, times)[1])
+roc_auc = []
+for i, _ in enumerate(times):
+    roc_auc.append(cumulative_dynamic_auc(et_train, et_test, out_risk[:, i], times[i])[0])
+for horizon in enumerate(horizons):
+    print(f"For {horizon[1]} quantile,")
+    print("TD Concordance Index:", cis[horizon[0]])
+    print("Brier Score:", brs[0][horizon[0]])
+    print("ROC AUC ", roc_auc[horizon[0]][0], "\n")

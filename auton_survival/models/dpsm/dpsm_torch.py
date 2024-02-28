@@ -220,7 +220,7 @@ class DeepDPTorch(torch.nn.Module):
 
     @staticmethod
     def _estimate_nk(log_resp):
-        resp = torch.exp(log_resp)
+        resp = torch.softmax(log_resp, dim=1)
         nk = resp.sum(axis=0) + 10 * np.finfo(float).eps
 
         return nk
