@@ -41,7 +41,7 @@ from auton_survival.models.dsm import DeepSurvivalMachines
 #                distribution='LogNormal',
 #                layers=[100])
 model = DeepSurvivalMachines(
-    k=8,
+    k=1,
     distribution="LogNormal",
     layers=[100]
 )
@@ -81,3 +81,55 @@ for horizon in enumerate(horizons):
     print("ROC AUC ", roc_auc[horizon[0]][0], "\n")
 
 # %%
+
+'''                                                                                                                                   | 16/100 [00:05<00:26,  3.16it/s]
+For 0.25 quantile,
+TD Concordance Index: 0.7586835202988933
+Brier Score: 0.11128451332353094
+ROC AUC  0.7662427960769529 
+
+For 0.5 quantile,
+TD Concordance Index: 0.7001363224012463
+Brier Score: 0.18338282896942423
+ROC AUC  0.7211280437788559 
+
+For 0.75 quantile,
+TD Concordance Index: 0.6533129637564933
+Brier Score: 0.22365597413329832
+ROC AUC  0.7059332404434483 
+'''
+
+'''
+For 0.25 quantile,
+TD Concordance Index: 0.7588144276400827
+Brier Score: 0.1112550550087257
+ROC AUC  0.7664117240940316 
+
+For 0.5 quantile,
+TD Concordance Index: 0.7002115092590766
+Brier Score: 0.18335736944679448
+ROC AUC  0.721188099088331 
+
+For 0.75 quantile,
+TD Concordance Index: 0.653207107446695
+Brier Score: 0.22364208736179372
+ROC AUC  0.7057830011510269 
+'''
+
+
+'''
+For 0.25 quantile,
+TD Concordance Index: 0.7637676783877877
+Brier Score: 0.1110828884326944
+ROC AUC  0.7713865317853978 
+
+For 0.5 quantile,
+TD Concordance Index: 0.7011815429822312
+Brier Score: 0.18326757245019656
+ROC AUC  0.7222500527314912 
+
+For 0.75 quantile,
+TD Concordance Index: 0.653984092760614
+Brier Score: 0.2238907197929432
+ROC AUC  0.707597988732053 
+'''

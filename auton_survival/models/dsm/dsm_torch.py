@@ -209,6 +209,7 @@ class DeepSurvivalMachinesTorch(torch.nn.Module):
     return(self.act(self.shapeg[risk](xrep))+self.shape[risk].expand(dim, -1),
            self.act(self.scaleg[risk](xrep))+self.scale[risk].expand(dim, -1),
            self.gate[risk](xrep)/self.temp)
+          # torch.ones(len(xrep), self.k).to(x.device))
 
   def get_shape_scale(self, risk='1'):
     return(self.shape[risk], self.scale[risk])
