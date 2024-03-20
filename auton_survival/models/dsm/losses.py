@@ -183,6 +183,9 @@ def _conditional_lognormal_loss(model, x, t, e, elbo=True, risk='1'):
 
   alpha = model.discount
   shape, scale, logits = model.forward(x, risk)
+  # shape: 100 x 3
+  # scale: 100 x 3
+  # logits: 100 x 3
 
   lossf = []
   losss = []
@@ -229,7 +232,7 @@ def _conditional_lognormal_loss(model, x, t, e, elbo=True, risk='1'):
   cens = np.where(e.cpu().data.numpy() != int(risk))[0]
   ll = lossf[uncens].sum() + alpha*losss[cens].sum()
 
-  return -ll/float(len(uncens)+len(cens))
+  return nn.Softmax(dim=1)(logits), -ll/float(len(uncens)+len(cens))
 
 
 def _conditional_weibull_loss(model, x, t, e, elbo=True, risk='1'):

@@ -257,15 +257,15 @@ class DSMBase():
 
     maxrisk = int(np.nanmax(e_train.cpu().numpy()))
     model = self._gen_torch_model(inputdim, optimizer, risks=maxrisk)
-    model, _ = train_dsm(model,
-                         x_train, t_train, e_train,
-                         x_val, t_val, e_val,
-                         n_iter=iters,
-                         lr=learning_rate,
-                         elbo=elbo,
-                         bs=batch_size,
-                         random_seed=self.random_seed)
-
+    model, _, trained_weights = train_dsm(model,
+                                          x_train, t_train, e_train,
+                                          x_val, t_val, e_val,
+                                          n_iter=iters,
+                                          lr=learning_rate,
+                                          elbo=elbo,
+                                          bs=batch_size,
+                                          random_seed=self.random_seed)
+    self.trained_weights = trained_weights
     self.torch_model = model.eval()
     self.fitted = True
 
@@ -292,18 +292,17 @@ class DSMBase():
     """
     if not self.fitted:
       raise Exception("The model has not been fitted yet. Please fit the " +
-                      "model using the `fit` method on some training data " +
-                      "before calling `_eval_nll`.")
+              "model using the `fit` method on some training data " +
+              "before calling `_eval_nll`.")
     processed_data = self._preprocess_training_data(x, t, e, 0, None, 0)
     _, _, _, x_val, t_val, e_val = processed_data
-    x_val, t_val, e_val = x_val,\
-        _reshape_tensor_with_nans(t_val),\
-        _reshape_tensor_with_nans(e_val)
+    x_val = x_val
+    t_val = _reshape_tensor_with_nans(t_val)
+    e_val = _reshape_tensor_with_nans(e_val)
     loss = 0
     for r in range(self.torch_model.risks):
-      loss += float(losses.conditional_loss(self.torch_model,
-                    x_val, t_val, e_val, elbo=False,
-                    risk=str(r+1)).detach().numpy())
+      _, cur_loss = losses.conditional_loss(self.torch_model, x_val, t_val, e_val, elbo=False, risk=str(r+1))
+      loss += float(cur_loss.detach().numpy())
     return loss
 
   def _preprocess_test_data(self, x):

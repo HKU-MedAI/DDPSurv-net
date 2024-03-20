@@ -1,10 +1,10 @@
 import pandas as pd
 import sys
 
-import os
-os.chdir('/home/r10user10/Documents/Jiacheng/dspm-auton-survival-main/')
-sys.path.append('/home/r10user10/Documents/Jiacheng/dspm-auton-survival-main/')
-print(os.getcwd())
+# import os
+# os.chdir('/home/r10user10/Documents/Jiacheng/dspm-auton-survival-main/')
+# sys.path.append('/home/r10user10/Documents/Jiacheng/dspm-auton-survival-main/')
+# print(os.getcwd())
 
 from auton_survival.datasets import load_dataset
 

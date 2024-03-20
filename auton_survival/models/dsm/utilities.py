@@ -152,11 +152,13 @@ def train_dsm(model,
 
   dics = []
   costs = []
+  weights = []
   i = 0
   for i in tqdm(range(n_iter)):
 
     x_train, t_train, e_train = shuffle(x_train, t_train, e_train, random_state=i)
 
+    cur_weights = []
     for j in range(nbatches):
 
       xb = x_train[j*bs:(j+1)*bs]
@@ -169,38 +171,50 @@ def train_dsm(model,
       optimizer.zero_grad()
       loss = 0
       for r in range(model.risks):
-        loss += conditional_loss(model,
-                                 xb,
-                                 _reshape_tensor_with_nans(tb),
-                                 _reshape_tensor_with_nans(eb),
-                                 elbo=elbo,
-                                 risk=str(r+1))
+        batch_weights, batch_loss = conditional_loss(model,
+                                    xb,
+                                    _reshape_tensor_with_nans(tb),
+                                    _reshape_tensor_with_nans(eb),
+                                    elbo=elbo,
+                                    risk=str(r+1))
+        loss += batch_loss
+        cur_weights.append(batch_weights.detach().cpu().numpy())
+        # loss += conditional_loss(model,
+        #                          xb,
+        #                          _reshape_tensor_with_nans(tb),
+        #                          _reshape_tensor_with_nans(eb),
+        #                          elbo=elbo,
+        #                          risk=str(r+1))
       #print ("Train Loss:", float(loss))
       loss.backward()
       optimizer.step()
 
     valid_loss = 0
     for r in range(model.risks):
-      valid_loss += conditional_loss(model,
+      _, batch_loss = conditional_loss(model,
                                      x_valid,
                                      t_valid_,
                                      e_valid_,
                                      elbo=False,
                                      risk=str(r+1))
+      valid_loss += batch_loss
 
     valid_loss = valid_loss.detach().cpu().numpy()
     costs.append(float(valid_loss))
     dics.append(deepcopy(model.state_dict()))
 
+    iter_weights = np.concatenate(cur_weights, axis=0)
+    weights.append(iter_weights)
+    
     if costs[-1] >= oldcost:
       if patience == 2:
         minm = np.argmin(costs)
         model.load_state_dict(dics[minm])
 
-        del dics
-        gc.collect()
+        # del dics
+        # gc.collect()
 
-        return model, i
+        return model, i, np.array(weights)
       else:
         patience += 1
     else:
@@ -211,8 +225,8 @@ def train_dsm(model,
   minm = np.argmin(costs)
   model.load_state_dict(dics[minm])
 
-  del dics
-  gc.collect()
+  # del dics
+  # gc.collect()
 
-  return model, i
+  return model, i, np.array(weights)
   

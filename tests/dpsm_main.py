@@ -26,6 +26,8 @@ tr_size = int(n * 0.70)
 vl_size = int(n * 0.10)
 te_size = int(n * 0.20)
 
+print(tr_size, vl_size, te_size)
+
 x_train, x_test, x_val = x[:tr_size], x[-te_size:], x[tr_size:tr_size + vl_size]
 t_train, t_test, t_val = t[:tr_size], t[-te_size:], t[tr_size:tr_size + vl_size]
 e_train, e_test, e_val = e[:tr_size], e[-te_size:], e[tr_size:tr_size + vl_size]
@@ -33,12 +35,19 @@ e_train, e_test, e_val = e[:tr_size], e[-te_size:], e[tr_size:tr_size + vl_size]
 models = []
 
 from auton_survival.models.dpsm import DeepDP
+from auton_survival.models.dsm import DeepSurvivalMachines
 
-model = DeepDP(k=3,
-               distribution='LogNormal',
-               layers=[100])
+# model = DeepDP(k=3,
+#                distribution='LogNormal',
+#                layers=[100])
+model = DeepSurvivalMachines(
+    k=8,
+    distribution="LogNormal",
+    layers=[100]
+)
 # The fit method is called to train the model
 model.fit(x_train, t_train, e_train, iters=100, learning_rate=0.001)
+
 models.append([[model.compute_nll(x_val, t_val, e_val), model]])
 
 best_model = min(models)
@@ -70,3 +79,5 @@ for horizon in enumerate(horizons):
     print("TD Concordance Index:", cis[horizon[0]])
     print("Brier Score:", brs[0][horizon[0]])
     print("ROC AUC ", roc_auc[horizon[0]][0], "\n")
+
+# %%

@@ -163,6 +163,9 @@ class DeepSurvivalMachinesTorch(torch.nn.Module):
         nn.Linear(lastdim, self.k, bias=False)
         ) for r in range(self.risks)})
 
+    # for param in self.gate.parameters():
+    #   param.requires_grad = False
+
     self.scaleg = nn.ModuleDict({str(r+1): nn.Sequential(
         nn.Linear(lastdim, self.k, bias=True)
         ) for r in range(self.risks)})
