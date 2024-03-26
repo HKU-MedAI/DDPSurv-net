@@ -205,6 +205,7 @@ def _conditional_lognormal_loss(model, x, t, e, elbo=True, risk='1'):
     lossf = torch.stack(lossf, dim=1)
 
     logits = losss + lossf + model._estimate_log_weights()
+    logits = torch.log_softmax(logits, dim=1)
     model.set_log_phi(logits.data)
     model.update_phi()  # TODO: Update of phi too frequent, need to introduce degree of freedom
 
@@ -418,11 +419,12 @@ def _lognormal_cdf(model, x, t_horizon, risk='1'):
             s = torch.log(s)
             lcdfs.append(s)
 
-        lpdfs = torch.stack(lpdfs, dim=1)
-        logits = lpdfs + model._estimate_log_weights()
+        # lpdfs = torch.stack(lpdfs, dim=1)
+        # logits = lpdfs model._estimate_log_weights()
+        # logits = torch.log_softmax(logits, dim=1)
 
         lcdfs = torch.stack(lcdfs, dim=1)
-        lcdfs = lcdfs + logits
+        lcdfs = lcdfs + model._estimate_log_weights()
         lcdfs = torch.logsumexp(lcdfs, dim=1)
         cdfs.append(lcdfs.detach().cpu().numpy())
 

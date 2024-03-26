@@ -1,10 +1,14 @@
-from auton_survival import datasets
+import numpy as np
 
-outcomes, features = datasets.load_support()
+from auton_survival import datasets
 
 # %%
 
 from auton_survival.preprocessing import Preprocessor
+
+# LOAD DATASETS
+
+outcomes, features = datasets.load_support()
 
 cat_feats = ['sex', 'dzgroup', 'dzclass', 'income', 'race', 'ca']
 num_feats = ['age', 'num.co', 'meanbp', 'wblc', 'hrt', 'resp',
@@ -12,8 +16,6 @@ num_feats = ['age', 'num.co', 'meanbp', 'wblc', 'hrt', 'resp',
              'glucose', 'bun', 'urine', 'adlp', 'adls']
 
 features = Preprocessor().fit_transform(features, cat_feats=cat_feats, num_feats=num_feats)
-
-import numpy as np
 
 horizons = [0.25, 0.5, 0.75]
 times = np.quantile(outcomes.time[outcomes.event == 1], horizons).tolist()
@@ -32,9 +34,9 @@ e_train, e_test, e_val = e[:tr_size], e[-te_size:], e[tr_size:tr_size + vl_size]
 
 models = []
 
-from auton_survival.models.dpsm import DeepDP
+from auton_survival.models.dsm import DeepSurvivalMachines
 
-model = DeepDP(k=3,
+model = DeepSurvivalMachines(k=3,
                distribution='LogNormal',
                layers=[100])
 # The fit method is called to train the model
@@ -70,5 +72,3 @@ for horizon in enumerate(horizons):
     print("TD Concordance Index:", cis[horizon[0]])
     print("Brier Score:", brs[0][horizon[0]])
     print("ROC AUC ", roc_auc[horizon[0]][0], "\n")
-
-exit(0)

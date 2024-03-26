@@ -166,7 +166,7 @@ class DeepDPTorch(torch.nn.Module):
 
         self.gamma_1 = torch.ones(self.k) / self.k
         self.gamma_2 = torch.ones(self.k) / self.k
-        self.eta = 1
+        self.eta = 100
         self.log_phi = torch.ones(self.k) / self.k
 
         self.scaleg = nn.ModuleDict({str(r + 1): nn.Sequential(
