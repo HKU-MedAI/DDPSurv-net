@@ -24,8 +24,9 @@ x = np.array(x).astype(float)
 import os, sys
 import numpy as np 
 
-path = '/home/r10user10/Documents/Jiacheng/dspm-auton-survival'
-os.chdir(path)
+# path = '/home/r10user10/Documents/Jiacheng/dspm-auton-survival'
+# os.chdir(path)
+# print(os.getcwd())
 
 from auton_survival import datasets
 
@@ -56,10 +57,12 @@ model = DeepSurvivalMachines(
     layers=[100]
 )
 # The fit method is called to train the model
-model.fit(x_train, t_train, e_train, iters=1, learning_rate=0.001)
+model.fit(x_train, t_train, e_train, iters=100, learning_rate=0.000001)
 
 trained_weights = model.trained_weights
-print(trained_weights.shape)
+print(np.isnan(trained_weights).sum())
+# import ipdb
+# ipdb.set_trace()
 
 horizons = [0.25, 0.5, 0.75]
 times = np.quantile(t[e == 1], horizons).tolist()
@@ -95,7 +98,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 figs, axes = plt.subplots(1, 3, figsize=(15, 5))
-iter_idx = [24, 25, 26]
+iter_idx = [97, 98, 99]
 
 for idx in range(3):
     sns.kdeplot(trained_weights[iter_idx[idx]][:, 0], fill=True, ax=axes[idx])
@@ -103,4 +106,6 @@ for idx in range(3):
     sns.kdeplot(trained_weights[iter_idx[idx]][:, 2], fill=True, ax=axes[idx])
     sns.kdeplot(trained_weights[iter_idx[idx]][:, 3], fill=True, ax=axes[idx])
     axes[idx].set_title(f'Iter {iter_idx[idx]}')
-    axes[idx].set_xlim(0.249, 0.251)
+    axes[idx].set_xlim(0.15, 0.4)
+
+plt.savefig("kkbox.png")

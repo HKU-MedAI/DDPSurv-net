@@ -91,6 +91,8 @@ def create_representation(inputdim, layers, activation, bias=False):
   return nn.Sequential(*modules)
 
 
+
+
 class DeepSurvivalMachinesTorch(torch.nn.Module):
   """A Torch implementation of Deep Survival Machines model.
 
@@ -177,7 +179,7 @@ class DeepSurvivalMachinesTorch(torch.nn.Module):
   def __init__(self, inputdim, k, layers=None, dist='Weibull',
                temp=1000., discount=1.0, optimizer='Adam',
                risks=1):
-    super(DeepSurvivalMachinesTorch, self).__init__()
+    super().__init__()
 
     self.k = k
     self.dist = dist
@@ -193,7 +195,9 @@ class DeepSurvivalMachinesTorch(torch.nn.Module):
     else: lastdim = layers[-1]
 
     self._init_dsm_layers(lastdim)
-    self.embedding = create_representation(inputdim, layers, 'ReLU6')
+    # self.embedding = create_representation(inputdim, layers, 'ReLU6')
+    self.embedding = nn.LSTM(input_size = 76, hidden_size =76 , num_layers = 1, batch_first = True)
+                                   
 
 
   def forward(self, x, risk='1'):
@@ -204,7 +208,10 @@ class DeepSurvivalMachinesTorch(torch.nn.Module):
         a torch.tensor of the input features.
 
     """
-    xrep = self.embedding(x)
+    xrep = self.embedding(x)[0]
+    # print(xrep.shape)
+    xrep = torch.mean(xrep, dim=1)
+    #print(torch.isnan(xrep))
     dim = x.shape[0]
     return(self.act(self.shapeg[risk](xrep))+self.shape[risk].expand(dim, -1),
            self.act(self.scaleg[risk](xrep))+self.scale[risk].expand(dim, -1),
@@ -440,7 +447,7 @@ class DeepConvolutionalSurvivalMachinesTorch(DeepSurvivalMachinesTorch):
         a torch.tensor of the input features.
 
     """
-    xrep = self.embedding(x)
+    xrep = self.embedding(x)[0]
 
     dim = x.shape[0]
     return(self.act(self.shapeg[risk](xrep))+self.shape[risk].expand(dim, -1),

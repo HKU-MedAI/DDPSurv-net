@@ -71,7 +71,10 @@ def pretrain_dsm(model, t_train, e_train, t_valid, e_valid,
     loss = 0
     for r in range(model.risks):
       loss += unconditional_loss(premodel, t_train, e_train, str(r+1))
-    loss.backward()
+      print(r)
+      print(torch.isnan(loss))
+    #torch.nn.utils.clip_grad_norm_(model.parameters(), 1)
+    #print("pretrain para cliped")
     optimizer.step()
 
     valid_loss = 0
@@ -114,7 +117,7 @@ def _get_padded_targets(t):
 def train_dsm(model,
               x_train, t_train, e_train,
               x_valid, t_valid, e_valid,
-              n_iter=10000, lr=1e-3, elbo=True,
+              n_iter=10000, lr=1e-2, elbo=True,
               bs=100, random_seed=0):
   """Function to train the torch instance of the model."""
 
@@ -187,6 +190,8 @@ def train_dsm(model,
         #                          risk=str(r+1))
       #print ("Train Loss:", float(loss))
       loss.backward()
+      #torch.nn.utils.clip_grad_norm_(model.parameters(), 1)
+      #print("train para cliped")
       optimizer.step()
 
     valid_loss = 0
