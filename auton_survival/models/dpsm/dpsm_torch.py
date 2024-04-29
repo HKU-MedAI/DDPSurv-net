@@ -166,6 +166,7 @@ class DeepDPTorch(torch.nn.Module):
 
         self.gamma_1 = torch.ones(self.k) / self.k
         self.gamma_2 = torch.ones(self.k) / self.k
+
         self.eta = 10
         self.log_phi = torch.ones(self.k) / self.k
 

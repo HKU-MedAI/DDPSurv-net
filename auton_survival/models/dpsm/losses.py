@@ -187,7 +187,7 @@ def _conditional_lognormal_loss(model, x, t, e, elbo=True, risk='1'):
     k_ = shape
     b_ = scale
 
-    for g in range(model.k):
+    for g in range(model.k - 1):
         mu = k_[:, g]
         sigma = b_[:, g]
 
@@ -201,10 +201,23 @@ def _conditional_lognormal_loss(model, x, t, e, elbo=True, risk='1'):
         lossf.append(f)
         losss.append(s)
 
+    # Mixing log Cauchy as the last component (temporary solution)
+
+    mu = k_[:, -1]
+    sigma = b_[:, -1]
+
+    f = - torch.log(t * torch.pi) + torch.log(sigma.clamp(1e-3)) - torch.log(((torch.log(t) - mu) ** 2 + sigma ** 2).clamp(1e-10))
+    # f = f.clamp(min=10 * np.finfo(float).eps)
+    s = 1 / 2 - 1 / torch.pi * torch.arctan((torch.log(t) - mu) / sigma)
+    s = torch.log(s.clamp(min=10 * np.finfo(float).eps))
+    lossf.append(f)
+    losss.append(s)
+
     losss = torch.stack(losss, dim=1)
     lossf = torch.stack(lossf, dim=1)
 
     logits = losss + lossf + model._estimate_log_weights()
+    logits = torch.log_softmax(logits, dim=1)
     model.set_log_phi(logits.data)
     model.update_phi()  # TODO: Update of phi too frequent, need to introduce degree of freedom
 
@@ -231,7 +244,6 @@ def _conditional_lognormal_loss(model, x, t, e, elbo=True, risk='1'):
     ll = lossf[uncens].sum() + alpha * losss[cens].sum()
 
     return -ll / float(len(uncens) + len(cens))
-
 
 def _conditional_weibull_loss(model, x, t, e, elbo=True, risk='1'):
     alpha = model.discount
@@ -418,11 +430,12 @@ def _lognormal_cdf(model, x, t_horizon, risk='1'):
             s = torch.log(s)
             lcdfs.append(s)
 
-        lpdfs = torch.stack(lpdfs, dim=1)
-        logits = lpdfs + model._estimate_log_weights()
+        # lpdfs = torch.stack(lpdfs, dim=1)
+        # logits = lpdfs model._estimate_log_weights()
+        # logits = torch.log_softmax(logits, dim=1)
 
         lcdfs = torch.stack(lcdfs, dim=1)
-        lcdfs = lcdfs + logits
+        lcdfs = lcdfs + model._estimate_log_weights()
         lcdfs = torch.logsumexp(lcdfs, dim=1)
         cdfs.append(lcdfs.detach().cpu().numpy())
 
