@@ -101,7 +101,9 @@ def get_likelihood(model, breslow_splines, x, t, e):
 
   event_probs = np.array([survivals, probability])
   event_probs = event_probs[e.astype('int'), range(len(e)), :]
-  #event_probs[event_probs<1e-10] = 1e-10
+  event_probs[event_probs<1e-10] = 1e-10
+  # if event_probs == 0:
+  #   print("Warning")
   probs = gates+np.log(event_probs)
   # else:
   #   gates_prob = torch.nn.Softmax(dim = 1)(gates)
