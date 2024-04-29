@@ -80,11 +80,11 @@ def _lognormal_loss(model, t, e, risk='1'):
 
     f = - sigma - 0.5*np.log(2*np.pi)
     f = f - torch.div((torch.log(t) - mu)**2, 2.*torch.exp(2*sigma))
-    print('is f nana',torch.isnan(f).sum())
+    #print('is f nana',torch.isnan(f).sum())
     s = torch.div(torch.log(t) - mu, torch.exp(sigma)*np.sqrt(2))
     s = 0.5 - 0.5*torch.erf(s)
     s = torch.log(s)
-    print('is s nana',torch.isnan(s).sum())
+    #print('is s nana',torch.isnan(s).sum())
 
     uncens = np.where(e.cpu().data.numpy() == int(risk))[0]
     cens = np.where(e.cpu().data.numpy() != int(risk))[0]

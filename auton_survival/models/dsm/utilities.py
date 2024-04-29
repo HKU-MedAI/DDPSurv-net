@@ -52,7 +52,7 @@ def get_optimizer(model, lr):
                               ' is not implemented')
 
 def pretrain_dsm(model, t_train, e_train, t_valid, e_valid,
-                 n_iter=10000, lr=1e-2, thres=1e-4):
+                 n_iter=10000, lr=1e-3, thres=1e-4):
 
   premodel = DeepSurvivalMachinesTorch(1, 1,
                                        dist=model.dist,
@@ -71,10 +71,11 @@ def pretrain_dsm(model, t_train, e_train, t_valid, e_valid,
     loss = 0
     for r in range(model.risks):
       loss += unconditional_loss(premodel, t_train, e_train, str(r+1))
-      print(r)
-      print(torch.isnan(loss))
+      #print(r)
+      #print(torch.isnan(loss))
     #torch.nn.utils.clip_grad_norm_(model.parameters(), 1)
     #print("pretrain para cliped")
+    loss.backward()
     optimizer.step()
 
     valid_loss = 0
@@ -117,7 +118,7 @@ def _get_padded_targets(t):
 def train_dsm(model,
               x_train, t_train, e_train,
               x_valid, t_valid, e_valid,
-              n_iter=10000, lr=1e-2, elbo=True,
+              n_iter=10000, lr=1e-3, elbo=True,
               bs=100, random_seed=0):
   """Function to train the torch instance of the model."""
 
@@ -138,7 +139,7 @@ def train_dsm(model,
                           t_valid_,
                           e_valid_,
                           n_iter=10000,
-                          lr=1e-2,
+                          lr=1e-3,
                           thres=1e-4)
 
   for r in range(model.risks):

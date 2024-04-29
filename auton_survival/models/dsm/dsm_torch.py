@@ -195,8 +195,8 @@ class DeepSurvivalMachinesTorch(torch.nn.Module):
     else: lastdim = layers[-1]
 
     self._init_dsm_layers(lastdim)
-    # self.embedding = create_representation(inputdim, layers, 'ReLU6')
-    self.embedding = nn.LSTM(input_size = 76, hidden_size =76 , num_layers = 1, batch_first = True)
+    self.embedding = create_representation(inputdim, layers, 'ReLU6')
+    # self.embedding = nn.LSTM(input_size = 76, hidden_size =100 , num_layers = 3, batch_first = True)
                                    
 
 
@@ -208,9 +208,10 @@ class DeepSurvivalMachinesTorch(torch.nn.Module):
         a torch.tensor of the input features.
 
     """
-    xrep = self.embedding(x)[0]
+    
+    xrep = self.embedding(x)
+    # xrep = torch.mean(xrep, dim=1)
     # print(xrep.shape)
-    xrep = torch.mean(xrep, dim=1)
     #print(torch.isnan(xrep))
     dim = x.shape[0]
     return(self.act(self.shapeg[risk](xrep))+self.shape[risk].expand(dim, -1),
