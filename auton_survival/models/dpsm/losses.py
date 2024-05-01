@@ -245,6 +245,7 @@ def _conditional_lognormal_loss(model, x, t, e, elbo=True, risk='1'):
 
     return -ll / float(len(uncens) + len(cens))
 
+
 def _conditional_weibull_loss(model, x, t, e, elbo=True, risk='1'):
     alpha = model.discount
     shape, scale, logits = model.forward(x, risk)
@@ -416,7 +417,7 @@ def _lognormal_cdf(model, x, t_horizon, risk='1'):
         lcdfs = []
         lpdfs = []
 
-        for g in range(model.k):
+        for g in range(model.k - 1):
             mu = k_[:, g]
             sigma = b_[:, g]
 
@@ -429,6 +430,13 @@ def _lognormal_cdf(model, x, t_horizon, risk='1'):
             s += 10 * np.finfo(float).eps
             s = torch.log(s)
             lcdfs.append(s)
+
+        #CDF of log-Cauchy
+        mu = k_[:, -1]
+        sigma = b_[:, -1]
+        s = 1 / 2 - 1 / torch.pi * torch.arctan((torch.log(t) - mu) / sigma)
+        s = torch.log(s.clamp(min=10 * np.finfo(float).eps))
+        lcdfs.append(s)
 
         # lpdfs = torch.stack(lpdfs, dim=1)
         # logits = lpdfs model._estimate_log_weights()
