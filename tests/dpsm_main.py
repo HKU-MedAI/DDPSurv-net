@@ -15,7 +15,7 @@ features = Preprocessor().fit_transform(features, cat_feats=cat_feats, num_feats
 
 import numpy as np
 
-horizons = [0.25, 0.5, 0.75]
+horizons = [0.25, 0.5, 0.75, 0.9]
 times = np.quantile(outcomes.time[outcomes.event == 1], horizons).tolist()
 
 x, t, e = features.values.astype(float), outcomes.time.values.astype(float), outcomes.event.values.astype(float)
@@ -34,11 +34,11 @@ models = []
 
 from auton_survival.models.dpsm import DeepDP
 
-model = DeepDP(k=3,
+model = DeepDP(k=10,
                distribution='LogNormal',
-               layers=[100])
+               layers=[100,100])
 # The fit method is called to train the model
-model.fit(x_train, t_train, e_train, iters=100, learning_rate=0.001)
+model.fit(x_train, t_train, e_train, iters=100, learning_rate=1e-4)
 models.append([[model.compute_nll(x_val, t_val, e_val), model]])
 
 best_model = min(models)
