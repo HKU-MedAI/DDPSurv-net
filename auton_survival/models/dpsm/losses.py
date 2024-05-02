@@ -187,7 +187,7 @@ def _conditional_lognormal_loss(model, x, t, e, elbo=True, risk='1'):
     k_ = shape
     b_ = scale
 
-    for g in range(model.k - 1):
+    for g in range(model.k):
         mu = k_[:, g]
         sigma = b_[:, g]
 
@@ -203,15 +203,15 @@ def _conditional_lognormal_loss(model, x, t, e, elbo=True, risk='1'):
 
     # Mixing log Cauchy as the last component (temporary solution)
 
-    mu = k_[:, -1]
-    sigma = b_[:, -1]
+    # mu = k_[:, -1]
+    # sigma = b_[:, -1]
 
-    f = - torch.log(t * torch.pi) + torch.log(sigma.clamp(1e-3)) - torch.log(((torch.log(t) - mu) ** 2 + sigma ** 2).clamp(1e-10))
-    # f = f.clamp(min=10 * np.finfo(float).eps)
-    s = 1 / 2 - 1 / torch.pi * torch.arctan((torch.log(t) - mu) / sigma)
-    s = torch.log(s.clamp(min=10 * np.finfo(float).eps))
-    lossf.append(f)
-    losss.append(s)
+    # f = - torch.log(t * torch.pi) + torch.log(sigma.clamp(1e-3)) - torch.log(((torch.log(t) - mu) ** 2 + sigma ** 2).clamp(1e-10))
+    # # f = f.clamp(min=10 * np.finfo(float).eps)
+    # s = 1 / 2 - 1 / torch.pi * torch.arctan((torch.log(t) - mu) / sigma)
+    # s = torch.log(s.clamp(min=10 * np.finfo(float).eps))
+    # lossf.append(f)
+    # losss.append(s)
 
     losss = torch.stack(losss, dim=1)
     lossf = torch.stack(lossf, dim=1)
