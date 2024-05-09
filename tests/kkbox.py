@@ -1,5 +1,7 @@
 import sys
 import os
+import matplotlib.pyplot as plt
+import seaborn as sns
 from sksurv.metrics import concordance_index_ipcw, brier_score, cumulative_dynamic_auc
 from auton_survival.models.dsm import DeepSurvivalMachines
 from auton_survival.models.dpsm import DeepDP
@@ -30,6 +32,7 @@ x = np.array(x).astype(float)
 
 # path = '/home/r10user10/Documents/Jiacheng/dspm-auton-survival'
 # os.chdir(path)
+# print(os.getcwd())
 
 
 n = len(x)
@@ -57,11 +60,7 @@ model = DeepSurvivalMachines(
     layers=[100]
 )
 # The fit method is called to train the model
-<< << << < Updated upstream
 model.fit(x_train, t_train, e_train, iters=100, learning_rate=0.000001)
-== == == =
-model.fit(x_train, t_train, e_train, iters=1, learning_rate=0.0001)
->>>>>> > Stashed changes
 
 trained_weights = model.trained_weights
 print(np.isnan(trained_weights).sum())
@@ -87,7 +86,6 @@ et_val = np.array([(e_val[i], t_val[i]) for i in range(len(e_val))],
 for i, _ in enumerate(times):
     cis.append(concordance_index_ipcw(
         et_train, et_test, out_risk[:, i], times[i])[0])
-
 brs.append(brier_score(et_train, et_test, out_survival, times)[1])
 roc_auc = []
 for i, _ in enumerate(times):
@@ -100,10 +98,6 @@ for horizon in enumerate(horizons):
     print("ROC AUC ", roc_auc[horizon[0]][0], "\n")
 
 
-# import seaborn as sns
-# import matplotlib.pyplot as plt
-
-<< << << < Updated upstream
 figs, axes = plt.subplots(1, 3, figsize=(15, 5))
 iter_idx = [97, 98, 99]
 
@@ -116,15 +110,3 @@ for idx in range(3):
     axes[idx].set_xlim(0.15, 0.4)
 
 plt.savefig("kkbox.png")
-== == == =
-# figs, axes = plt.subplots(1, 3, figsize=(15, 5))
-# iter_idx = [24, 25, 26]
-
-# for idx in range(3):
-#     sns.kdeplot(trained_weights[iter_idx[idx]][:, 0], fill=True, ax=axes[idx])
-#     sns.kdeplot(trained_weights[iter_idx[idx]][:, 1], fill=True, ax=axes[idx])
-#     sns.kdeplot(trained_weights[iter_idx[idx]][:, 2], fill=True, ax=axes[idx])
-#     sns.kdeplot(trained_weights[iter_idx[idx]][:, 3], fill=True, ax=axes[idx])
-#     axes[idx].set_title(f'Iter {iter_idx[idx]}')
-#     axes[idx].set_xlim(0.249, 0.251)
->>>>>> > Stashed changes
