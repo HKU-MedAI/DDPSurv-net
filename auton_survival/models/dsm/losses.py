@@ -208,6 +208,7 @@ def _conditional_lognormal_loss(model, x, t, e, elbo=True, risk='1'):
         losss = losss.sum(dim=1)
         lossf = lossf.sum(dim=1)
 
+
     else:
 
         lossg = nn.LogSoftmax(dim=1)(logits)
@@ -216,12 +217,20 @@ def _conditional_lognormal_loss(model, x, t, e, elbo=True, risk='1'):
 
         losss = torch.logsumexp(losss, dim=1)
         lossf = torch.logsumexp(lossf, dim=1)
+    
+
 
     uncens = np.where(e.cpu().data.numpy() == int(risk))[0]
+
     cens = np.where(e.cpu().data.numpy() != int(risk))[0]
+
     ll = lossf[uncens].sum() + alpha * losss[cens].sum()
 
-    return -ll / float(len(uncens) + len(cens))
+    result = -ll / float(len(uncens) + len(cens))
+
+
+
+    return result
 
 
 def _conditional_weibull_loss(model, x, t, e, elbo=True, risk='1'):

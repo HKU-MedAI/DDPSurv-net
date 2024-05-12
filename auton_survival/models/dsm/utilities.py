@@ -118,7 +118,7 @@ def _get_padded_targets(t):
 def train_dsm(model,
               x_train, t_train, e_train,
               x_valid, t_valid, e_valid,
-              n_iter=10000, lr=1e-3, elbo=True,
+              n_iter=100, lr=1e-3, elbo=True,
               bs=100, random_seed=0):
   """Function to train the torch instance of the model."""
 
@@ -138,7 +138,7 @@ def train_dsm(model,
                           e_train_,
                           t_valid_,
                           e_valid_,
-                          n_iter=10000,
+                          n_iter=100,
                           lr=1e-3,
                           thres=1e-4)
 
@@ -175,20 +175,23 @@ def train_dsm(model,
       optimizer.zero_grad()
       loss = 0
       for r in range(model.risks):
-        batch_weights, batch_loss = conditional_loss(model,
-                                    xb,
-                                    _reshape_tensor_with_nans(tb),
-                                    _reshape_tensor_with_nans(eb),
-                                    elbo=elbo,
-                                    risk=str(r+1))
-        loss += batch_loss
-        cur_weights.append(batch_weights.detach().cpu().numpy())
-        # loss += conditional_loss(model,
-        #                          xb,
-        #                          _reshape_tensor_with_nans(tb),
-        #                          _reshape_tensor_with_nans(eb),
-        #                          elbo=elbo,
-        #                          risk=str(r+1))
+        # import ipdb
+        # ipdb.set_trace()
+        # batch_weights, batch_loss = conditional_loss(model,
+        #                             xb,
+        #                             _reshape_tensor_with_nans(tb),
+        #                             _reshape_tensor_with_nans(eb),
+        #                             elbo=elbo,
+        #                             risk=str(r+1))
+
+        # loss += batch_loss
+        # cur_weights.append(batch_weights.detach().cpu().numpy())
+        loss += conditional_loss(model,
+                                 xb,
+                                 _reshape_tensor_with_nans(tb),
+                                 _reshape_tensor_with_nans(eb),
+                                 elbo=elbo,
+                                 risk=str(r+1))
       #print ("Train Loss:", float(loss))
       loss.backward()
       #torch.nn.utils.clip_grad_norm_(model.parameters(), 1)
@@ -197,7 +200,7 @@ def train_dsm(model,
 
     valid_loss = 0
     for r in range(model.risks):
-      _, batch_loss = conditional_loss(model,
+      batch_loss = conditional_loss(model,
                                      x_valid,
                                      t_valid_,
                                      e_valid_,
@@ -209,8 +212,7 @@ def train_dsm(model,
     costs.append(float(valid_loss))
     dics.append(deepcopy(model.state_dict()))
 
-    iter_weights = np.concatenate(cur_weights, axis=0)
-    weights.append(iter_weights)
+
     
     if costs[-1] >= oldcost:
       if patience == 2:
@@ -220,7 +222,7 @@ def train_dsm(model,
         # del dics
         # gc.collect()
 
-        return model, i, np.array(weights)
+        return model, i
       else:
         patience += 1
     else:
@@ -234,5 +236,5 @@ def train_dsm(model,
   # del dics
   # gc.collect()
 
-  return model, i, np.array(weights)
+  return model, i
   

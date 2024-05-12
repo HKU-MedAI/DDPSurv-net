@@ -257,7 +257,7 @@ class DSMBase():
 
     maxrisk = int(np.nanmax(e_train.cpu().numpy()))
     model = self._gen_torch_model(inputdim, optimizer, risks=maxrisk)
-    model, _, trained_weights = train_dsm(model,
+    model, _ = train_dsm(model,
                                           x_train, t_train, e_train,
                                           x_val, t_val, e_val,
                                           n_iter=iters,
@@ -265,7 +265,7 @@ class DSMBase():
                                           elbo=elbo,
                                           bs=batch_size,
                                           random_seed=self.random_seed)
-    self.trained_weights = trained_weights
+
     self.torch_model = model.eval()
     self.fitted = True
 

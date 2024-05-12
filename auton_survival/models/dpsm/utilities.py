@@ -52,7 +52,7 @@ def get_optimizer(model, lr):
                               ' is not implemented')
 
 def pretrain_dpsm(model, t_train, e_train, t_valid, e_valid,
-                 n_iter=10000, lr=1e-2, thres=1e-4):
+                 n_iter=1000, lr=1e-2, thres=1e-4):
 
   premodel = DeepDPTorch(1, 1,
                                        dist=model.dist,
@@ -114,7 +114,7 @@ def _get_padded_targets(t):
 def train_dpsm(model,
               x_train, t_train, e_train,
               x_valid, t_valid, e_valid,
-              n_iter=10000, lr=1e-3, elbo=True,
+              n_iter=1000, lr=1e-3, elbo=True,
               bs=100, random_seed=0):
   """Function to train the torch instance of the model."""
 
