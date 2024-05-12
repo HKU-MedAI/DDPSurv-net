@@ -177,6 +177,25 @@ def _conditional_normal_loss(model, x, t, e, elbo=True, risk='1'):
     return -ll / float(len(uncens) + len(cens))
 
 
+def log_cauchy(t, mu, sigma):
+    f = - torch.log(t * torch.pi) + torch.log(sigma.clamp(1e-3)) - \
+        torch.log(((torch.log(t) - mu) ** 2 + sigma ** 2).clamp(1e-10))
+    # f = f.clamp(min=10 * np.finfo(float).eps)
+    s = 1 / 2 - 1 / torch.pi * torch.arctan((torch.log(t) - mu) / sigma)
+    s = torch.log(s.clamp(min=10 * np.finfo(float).eps))
+    return f, s
+
+
+def lognormal(t, mu, sigma):
+    f = - sigma - 0.5 * np.log(2 * np.pi)
+    f = f - torch.div((torch.log(t) - mu) ** 2, 2. * torch.exp(2 * sigma))
+    s = torch.div(torch.log(t) - mu, torch.exp(sigma) * np.sqrt(2))
+    s = 0.5 - 0.5 * torch.erf(s)
+    s += 10 * np.finfo(float).eps
+    s = torch.log(s)
+    return f, s
+
+
 def _conditional_lognormal_loss(model, x, t, e, elbo=True, risk='1'):
     alpha = model.discount
     shape, scale, logits = model.forward(x, risk)
@@ -187,26 +206,50 @@ def _conditional_lognormal_loss(model, x, t, e, elbo=True, risk='1'):
     k_ = shape
     b_ = scale
 
-    for g in range(model.k):
+
+    k1 = model.k - 1
+    k2 = 1
+
+    for g in range(k1):
+
         mu = k_[:, g]
         sigma = b_[:, g]
 
-        f = - sigma - 0.5 * np.log(2 * np.pi)
-        f = f - torch.div((torch.log(t) - mu) ** 2, 2. * torch.exp(2 * sigma))
-        s = torch.div(torch.log(t) - mu, torch.exp(sigma) * np.sqrt(2))
-        s = 0.5 - 0.5 * torch.erf(s)
-        s += 10 * np.finfo(float).eps
-        s = torch.log(s)
-
+        f, s = lognormal(t, mu, sigma)
         lossf.append(f)
         losss.append(s)
 
-    # Mixing log Cauchy as the last component (temporary solution)
+    for g in range(k2):
+        mu = k_[:, g + k1]
+        sigma = b_[:, g + k1]
+
+        f, s = log_cauchy(t, mu, sigma)
+        lossf.append(f)
+        losss.append(s)
+
+    # for g in range(model.k - 1):
+    #     mu = k_[:, g]
+    #     sigma = b_[:, g]
+
+    #     f = - sigma - 0.5 * np.log(2 * np.pi)
+    #     f = f - torch.div((torch.log(t) - mu) ** 2, 2. * torch.exp(2 * sigma))
+    #     s = torch.div(torch.log(t) - mu, torch.exp(sigma) * np.sqrt(2))
+    #     s = 0.5 - 0.5 * torch.erf(s)
+    #     s += 10 * np.finfo(float).eps
+    #     s = torch.log(s)
+
+    #     lossf.append(f)
+    #     losss.append(s)
+
+    # # Mixing log Cauchy as the last component (temporary solution)
+    # # FIXME: Need to find a better way to handle this
 
     # mu = k_[:, -1]
     # sigma = b_[:, -1]
 
-    # f = - torch.log(t * torch.pi) + torch.log(sigma.clamp(1e-3)) - torch.log(((torch.log(t) - mu) ** 2 + sigma ** 2).clamp(1e-10))
+    # f = - torch.log(t * torch.pi) + torch.log(sigma.clamp(1e-3)) - \
+    #     torch.log(((torch.log(t) - mu) ** 2 + sigma ** 2).clamp(1e-10))
+
     # # f = f.clamp(min=10 * np.finfo(float).eps)
     # s = 1 / 2 - 1 / torch.pi * torch.arctan((torch.log(t) - mu) / sigma)
     # s = torch.log(s.clamp(min=10 * np.finfo(float).eps))
@@ -422,7 +465,8 @@ def _lognormal_cdf(model, x, t_horizon, risk='1'):
             sigma = b_[:, g]
 
             f = - sigma - 0.5 * np.log(2 * np.pi)
-            f = f - torch.div((torch.log(t) - mu) ** 2, 2. * torch.exp(2 * sigma))
+            f = f - torch.div((torch.log(t) - mu) ** 2,
+                              2. * torch.exp(2 * sigma))
             lpdfs.append(f)
 
             s = torch.div(torch.log(t) - mu, torch.exp(sigma) * np.sqrt(2))
@@ -431,7 +475,7 @@ def _lognormal_cdf(model, x, t_horizon, risk='1'):
             s = torch.log(s)
             lcdfs.append(s)
 
-        #CDF of log-Cauchy
+        # CDF of log-Cauchy
         mu = k_[:, -1]
         sigma = b_[:, -1]
         s = 1 / 2 - 1 / torch.pi * torch.arctan((torch.log(t) - mu) / sigma)
