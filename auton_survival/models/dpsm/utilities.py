@@ -54,10 +54,10 @@ def get_optimizer(model, lr):
 def pretrain_dpsm(model, t_train, e_train, t_valid, e_valid,
                  n_iter=1000, lr=1e-2, thres=1e-4):
 
-  premodel = DeepDPTorch(1, 1,
+  premodel = DeepDPTorch(1, 1, 0, 10,
                                        dist=model.dist,
                                        risks=model.risks,
-                                       optimizer=model.optimizer)
+                                       optimizer=model.optimizer).cuda()
   premodel.double()
 
   optimizer = get_optimizer(premodel, lr)
@@ -120,6 +120,7 @@ def train_dpsm(model,
 
   torch.manual_seed(random_seed)
   np.random.seed(random_seed)
+  # print('Pretraining the Underlying Distributions...')
 
   logging.info('Pretraining the Underlying Distributions...')
   # For padded variable length sequences we first unroll the input and
@@ -137,6 +138,7 @@ def train_dpsm(model,
                           n_iter=10000,
                           lr=1e-2,
                           thres=1e-4)
+
 
   for r in range(model.risks):
     model.shape[str(r+1)].data.fill_(float(premodel.shape[str(r+1)]))
@@ -175,7 +177,7 @@ def train_dpsm(model,
                                  _reshape_tensor_with_nans(eb),
                                  elbo=elbo,
                                  risk=str(r+1))
-      #print ("Train Loss:", float(loss))
+      # print ("Train Loss:", float(loss))
       loss.backward()
       optimizer.step()
 

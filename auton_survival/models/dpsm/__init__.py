@@ -182,15 +182,18 @@ __pdoc__["DPSMBase"] = False
 class DPSMBase():
     """Base Class for all DSM models"""
 
-    def __init__(self, k=3, layers=None, distribution="Weibull",
+    def __init__(self, k=3, k2 = 0, eta=10, layers=None, distribution="Weibull",
                  temp=1000., discount=1.0, random_seed=0):
         self.k = k
+        self.k2 = k2
+        self.eta = eta
         self.layers = layers
         self.dist = distribution
         self.temp = temp
         self.discount = discount
         self.fitted = False
         self.random_seed = random_seed
+        
 
     def _gen_torch_model(self, inputdim, optimizer, risks):
         """Helper function to return a torch model."""
@@ -200,12 +203,14 @@ class DPSMBase():
 
         return DeepDPTorch(inputdim,
                            k=self.k,
+                           k2=self.k2,
+                           eta=self.eta,
                            layers=self.layers,
                            dist=self.dist,
                            temp=self.temp,
                            discount=self.discount,
                            optimizer=optimizer,
-                           risks=risks)
+                           risks=risks).cuda()
 
     def fit(self, x, t, e, vsize=0.15, val_data=None,
             iters=1, learning_rate=1e-3, batch_size=100,
@@ -246,6 +251,8 @@ class DPSMBase():
                                                         vsize, val_data,
                                                         self.random_seed)
         x_train, t_train, e_train, x_val, t_val, e_val = processed_data
+        # print(x_train.device)
+        # print(x_val.device)
 
         # Todo: Change this somehow. The base design shouldn't depend on child
         if type(self).__name__ in ["DeepConvolutionalDP",
@@ -306,7 +313,7 @@ class DPSMBase():
 
     def _preprocess_test_data(self, x):
         x = _dataframe_to_array(x)
-        return torch.from_numpy(x)
+        return torch.from_numpy(x).cuda()
 
     def _preprocess_training_data(self, x, t, e, vsize, val_data, random_seed):
 
@@ -319,9 +326,10 @@ class DPSMBase():
         np.random.shuffle(idx)
         x_train, t_train, e_train = x[idx], t[idx], e[idx]
 
-        x_train = torch.from_numpy(x_train).double()
-        t_train = torch.from_numpy(t_train).double()
-        e_train = torch.from_numpy(e_train).double()
+        x_train = torch.from_numpy(x_train).double().cuda()
+        t_train = torch.from_numpy(t_train).double().cuda()
+        e_train = torch.from_numpy(e_train).double().cuda()
+
 
         if val_data is None:
 
@@ -340,9 +348,9 @@ class DPSMBase():
             t_val = _dataframe_to_array(t_val)
             e_val = _dataframe_to_array(e_val)
 
-            x_val = torch.from_numpy(x_val).double()
-            t_val = torch.from_numpy(t_val).double()
-            e_val = torch.from_numpy(e_val).double()
+            x_val = torch.from_numpy(x_val).double().cuda()
+            t_val = torch.from_numpy(t_val).double().cuda()
+            e_val = torch.from_numpy(e_val).double().cuda()
 
         return (x_train, t_train, e_train, x_val, t_val, e_val)
 

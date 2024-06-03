@@ -89,7 +89,7 @@ def create_representation(inputdim, layers, activation, bias=False):
         modules.append(act)
         prevdim = hidden
 
-    return nn.Sequential(*modules)
+    return nn.Sequential(*modules).cuda()
 
 
 class DeepDPTorch(torch.nn.Module):
@@ -136,7 +136,7 @@ class DeepDPTorch(torch.nn.Module):
 
   """
 
-    def _init_dsm_layers(self, lastdim):
+    def _init_dsm_layers(self, lastdim, eta):
 
         if self.dist in ['Weibull']:
             self.act = nn.SELU()
@@ -167,7 +167,7 @@ class DeepDPTorch(torch.nn.Module):
         self.gamma_1 = torch.ones(self.k) / self.k
         self.gamma_2 = torch.ones(self.k) / self.k
 
-        self.eta = 10
+        self.eta = eta
         self.log_phi = torch.ones(self.k) / self.k
 
         self.scaleg = nn.ModuleDict({str(r + 1): nn.Sequential(
@@ -178,12 +178,13 @@ class DeepDPTorch(torch.nn.Module):
             nn.Linear(lastdim, self.k, bias=True)
         ) for r in range(self.risks)})
 
-    def __init__(self, inputdim, k, layers=None, dist='Weibull',
+    def __init__(self, inputdim, k, k2, eta, layers=None, dist='Weibull',
                  temp=1000., discount=1.0, optimizer='Adam',
                  risks=1):
         super(DeepDPTorch, self).__init__()
 
         self.k = k
+        self.k2 = k2
         self.dist = dist
         self.temp = float(temp)
         self.discount = float(discount)
@@ -198,7 +199,7 @@ class DeepDPTorch(torch.nn.Module):
         else:
             lastdim = layers[-1]
 
-        self._init_dsm_layers(lastdim)
+        self._init_dsm_layers(lastdim, eta)
         self.embedding = create_representation(inputdim, layers, 'ReLU6')
 
     def forward(self, x, risk='1'):
@@ -229,9 +230,9 @@ class DeepDPTorch(torch.nn.Module):
     def _estimate_log_weights(self):
         digamma_sum = torch.digamma(
             self.gamma_1 + self.gamma_2
-        )
-        digamma_a = torch.digamma(self.gamma_1)
-        digamma_b = torch.digamma(self.gamma_2)
+        ).cuda()
+        digamma_a = torch.digamma(self.gamma_1).cuda()
+        digamma_b = torch.digamma(self.gamma_2).cuda()
 
         return (
                 digamma_a
@@ -251,7 +252,7 @@ class DeepDPTorch(torch.nn.Module):
         """
 
         gamma_2 = self.eta + np.hstack((np.cumsum(nk.detach().cpu().numpy()[::-1])[-2::-1], 0))
-        self.gamma_2 = torch.from_numpy(gamma_2)
+        self.gamma_2 = torch.from_numpy(gamma_2).cuda()
         self.gamma_1 = 1 + nk
 
     def get_shape_scale(self, risk='1'):
@@ -306,7 +307,7 @@ class DeepRecurrentDPTorch(DeepDPTorch):
 
   """
 
-    def __init__(self, inputdim, k, typ='LSTM', layers=1,
+    def __init__(self, inputdim, k, k2, typ='LSTM', layers=1,
                  hidden=None, dist='Weibull',
                  temp=1000., discount=1.0,
                  optimizer='Adam', risks=1):
@@ -314,6 +315,7 @@ class DeepRecurrentDPTorch(DeepDPTorch):
         super(DeepDPTorch, self).__init__()
 
         self.k = k
+        self.k2 = k2
         self.dist = dist
         self.temp = float(temp)
         self.discount = float(discount)

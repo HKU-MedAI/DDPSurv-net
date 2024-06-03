@@ -207,8 +207,10 @@ def _conditional_lognormal_loss(model, x, t, e, elbo=True, risk='1'):
     b_ = scale
 
 
-    k1 = model.k - 1
-    k2 = 1
+    k1 = model.k - model.k2
+    k2 = model.k2
+    # print(k1)
+    # print(k2)
 
     for g in range(k1):
 
@@ -444,6 +446,7 @@ def _lognormal_cdf(model, x, t_horizon, risk='1'):
     squish = nn.LogSoftmax(dim=1)
 
     shape, scale, logits = model.forward(x, risk)
+    print(shape.device)
     logits = squish(logits)
 
     k_ = shape

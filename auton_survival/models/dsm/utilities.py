@@ -118,7 +118,7 @@ def _get_padded_targets(t):
 def train_dsm(model,
               x_train, t_train, e_train,
               x_valid, t_valid, e_valid,
-              n_iter=100, lr=1e-3, elbo=True,
+              n_iter=10000, lr=1e-3, elbo=True,
               bs=100, random_seed=0):
   """Function to train the torch instance of the model."""
 
@@ -138,7 +138,7 @@ def train_dsm(model,
                           e_train_,
                           t_valid_,
                           e_valid_,
-                          n_iter=100,
+                          n_iter=10000,
                           lr=1e-3,
                           thres=1e-4)
 
