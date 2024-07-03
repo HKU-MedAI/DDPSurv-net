@@ -36,7 +36,7 @@ from auton_survival.models.dpsm import DeepDP
 from sklearn.model_selection import ParameterGrid
 
 param_grid = {'k' : [10],
-              'distribution' : ['LogNormal'],
+              'distribution' : ['Weibull'],
               'learning_rate' : [ 1e-4, 1e-3],
               'layers' : [ [], [100], [100, 100] ]
              }

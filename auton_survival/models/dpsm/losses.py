@@ -240,7 +240,6 @@ def _conditional_lognormal_loss(model, x, t, e, elbo=True, risk='1'):
     #     losss.append(s)
 
     # # Mixing log Cauchy as the last component (temporary solution)
-    # # FIXME: Need to find a better way to handle this
 
     # mu = k_[:, -1]
     # sigma = b_[:, -1]
@@ -256,10 +255,6 @@ def _conditional_lognormal_loss(model, x, t, e, elbo=True, risk='1'):
     losss = torch.stack(losss, dim=1)
     lossf = torch.stack(lossf, dim=1)
 
-    logits = losss + lossf + model._estimate_log_weights()
-    logits = torch.log_softmax(logits, dim=1)
-    model.set_log_phi(logits.data)
-    model.update_phi()  # TODO: Update of phi too frequent, need to introduce degree of freedom
 
     if elbo:
 
@@ -286,6 +281,13 @@ def _conditional_lognormal_loss(model, x, t, e, elbo=True, risk='1'):
     return -ll / float(len(uncens) + len(cens))
 
 
+def weibull_f_s(t, k, b):
+    s = - (torch.pow(torch.exp(b)*t, torch.exp(k)))
+    f = k + b + ((torch.exp(k)-1)*(b+torch.log(t)))
+    f = f + s
+
+    return f, s
+
 def _conditional_weibull_loss(model, x, t, e, elbo=True, risk='1'):
     alpha = model.discount
     shape, scale, logits = model.forward(x, risk)
@@ -296,19 +298,32 @@ def _conditional_weibull_loss(model, x, t, e, elbo=True, risk='1'):
     lossf = []
     losss = []
 
-    for g in range(model.k):
-        k = k_[:, g]
-        b = b_[:, g]
+    k1 = model.k - 1
+    k2 = 1
 
-        s = - (torch.pow(torch.exp(b) * t, torch.exp(k)))
-        f = k + b + ((torch.exp(k) - 1) * (b + torch.log(t)))
-        f = f + s
+    for g in range(k1):
+        mu = k_[:, g]
+        sigma = b_[:, g]
 
+        f, s = lognormal(t, mu, sigma)
+        lossf.append(f)
+        losss.append(s)
+
+    for g in range(k2):
+        mu = k_[:, g + k1]
+        sigma = b_[:, g + k1]
+
+        f, s = weibull_f_s(t, mu, sigma)
         lossf.append(f)
         losss.append(s)
 
     losss = torch.stack(losss, dim=1)
     lossf = torch.stack(lossf, dim=1)
+
+    logits = losss + lossf + model._estimate_log_weights()
+    logits = torch.log_softmax(logits, dim=1)
+    model.set_log_phi(logits.data)
+    model.update_phi()  # TODO: Update of phi too frequent, need to introduce degree of freedom
 
     if elbo:
 
@@ -397,11 +412,18 @@ def _weibull_cdf(model, x, t_horizon, risk='1'):
         t = t_horz[:, j]
         lcdfs = []
 
-        for g in range(model.k):
+        for g in range(model.k - 1):
             k = k_[:, g]
             b = b_[:, g]
             s = - (torch.pow(torch.exp(b) * t, torch.exp(k)))
+
             lcdfs.append(s)
+        # CDF of log-Cauchy
+        mu = k_[:, -1]
+        sigma = b_[:, -1]
+        s = 1 / 2 - 1 / torch.pi * torch.arctan((torch.log(t) - mu) / sigma)
+        s = torch.log(s.clamp(min=10 * np.finfo(float).eps))
+        lcdfs.append(s)
 
         lcdfs = torch.stack(lcdfs, dim=1)
         lcdfs = lcdfs + logits
