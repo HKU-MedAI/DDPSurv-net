@@ -1,6 +1,6 @@
 from lifelines import CoxPHFitter
 import numpy as np
-from dspm_dataset import support, synthetic, kkbox, mimic
+from dspm_dataset import support, synthetic, kkbox, mimic3, mimic4
 
 
 def cph(dataset):
@@ -13,8 +13,11 @@ def cph(dataset):
     if dataset == 'kkbox':
         x_train, t_train , e_train, x_test, t_test , e_test = kkbox()
         print(x_train.shape[-1])
-    if dataset == 'mimic':
-        x_train, t_train , e_train, x_test, t_test , e_test = mimic()  
+    if dataset == 'mimic3':
+        x_train, t_train , e_train, x_test, t_test , e_test = mimic3()  
+        print(x_train.shape[-1])
+    if dataset == 'mimic4':
+        x_train, t_train , e_train, x_test, t_test , e_test = mimic4()  
         print(x_train.shape[-1])
     
     cph = CoxPHFitter(penalizer=0.1)

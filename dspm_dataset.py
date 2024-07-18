@@ -1,5 +1,6 @@
 import random
 import numpy as np
+from pycox.datasets import from_deepsurv, from_kkbox
 
 def support():
     import sys
@@ -74,11 +75,11 @@ def synthetic():
     x_test = features_te_dcph.values
     e_test = outcomes_te['event'].values.astype(float)
     t_test = outcomes_te['time'].values
+
+    print(x_train.dtype, t_train.dtype, e_train.dtype)
     return x_train, t_train , e_train, x_test, t_test , e_test
 
 def kkbox():
-    from pycox.datasets import from_kkbox
-
 
     kkbox_data = from_kkbox._DatasetKKBoxChurn()
     #kkbox_data.download_kkbox()
@@ -121,18 +122,18 @@ def kkbox():
     return x_train, t_train , e_train, x_test, t_test , e_test
 
 
-def mimic():
+def mimic4():
 
-    x_train = np.load('x_train.npy')
-    t_train = np.load('t_train.npy')
-    e_train = 1 - np.load('e_train.npy')
+    x_train = np.load('datasets/mimic4/mimic4_x_train.npy')
+    t_train = np.load('datasets/mimic4/mimic4_t_train.npy')
+    e_train = 1 - np.load('datasets/mimic4/mimic4_e_train.npy')
     index = np.where(t_train <= 0)[0]
     t_train = np.delete(t_train, index)
     e_train = np.delete(e_train, index)
     x_train = np.delete(x_train, index, axis=0)
-    x_test = np.load('x_test.npy')
-    t_test = np.load('t_test.npy')
-    e_test = 1 - np.load('e_test.npy')
+    x_test = np.load('datasets/mimic4/mimic4_x_test.npy')
+    t_test = np.load('datasets/mimic4/mimic4_t_test.npy')
+    e_test = 1 - np.load('datasets/mimic4/mimic4_e_test.npy')
     index = np.where(t_test <= 0)[0]
     t_test = np.delete(t_test, index)
     e_test = np.delete(e_test, index)
@@ -140,6 +141,48 @@ def mimic():
     x_train = np.mean(x_train, axis=1)
     x_test = np.mean(x_test, axis=1)
     print(x_train.shape)
+    return x_train, t_train , e_train, x_test, t_test , e_test
+
+def mimic3():
+    x_train = np.load('datasets/mimic3/mimic3_x_train.npy')
+    t_train = np.load('datasets/mimic3/mimic3_t_train.npy')
+    e_train = 1 - np.load('datasets/mimic3/mimic3_e_train.npy')
+    index = np.where(t_train <= 0)[0]
+    t_train = np.delete(t_train, index)
+    e_train = np.delete(e_train, index)
+    x_train = np.delete(x_train, index, axis=0)
+    x_test = np.load('datasets/mimic3/mimic3_x_test.npy')
+    t_test = np.load('datasets/mimic3/mimic3_t_test.npy')
+    e_test = 1 - np.load('datasets/mimic3/mimic3_e_test.npy')
+    index = np.where(t_test <= 0)[0]
+    t_test = np.delete(t_test, index)
+    e_test = np.delete(e_test, index)
+    x_test = np.delete(x_test, index, axis=0)
+    x_train = np.mean(x_train, axis=1)
+    x_test = np.mean(x_test, axis=1)
+    print(x_train.shape)
+    return x_train, t_train , e_train, x_test, t_test , e_test
+    
+
+def metabric():
+    data = from_deepsurv._Metabric()
+    data_full = data.read_df()
+
+    x = data_full.drop(columns=['duration', 'event']).values.astype('float64')
+    t = data_full['duration'].values.astype('float64')
+    e = data_full['event'].values.astype('float64')
+    
+    print(x.dtype, t.dtype, e.dtype)
+
+    n = len(x)
+
+    tr_size = int(n*0.80)
+    te_size = int(n*0.20)
+
+    x_train, x_test = x[:tr_size], x[-te_size:]
+    t_train, t_test = t[:tr_size], t[-te_size:]
+    e_train, e_test = e[:tr_size], e[-te_size:]
+
     return x_train, t_train , e_train, x_test, t_test , e_test
 
 

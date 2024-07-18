@@ -1,23 +1,29 @@
 import argparse
-from dspm_dataset import support, synthetic, kkbox, mimic, edit_censor_rate
+from dspm_dataset import support, synthetic, kkbox, mimic4, mimic3, metabric, edit_censor_rate
 import numpy as np
+import pandas as pd
+import numpy as np
+from auton_survival import DeepCoxPH
+from auton_survival.models.dsm import DeepSurvivalMachines
+from auton_survival.models.dcm import DeepCoxMixtures
+from auton_survival.models.dpsm import DeepDP
+import os
+from sksurv.metrics import concordance_index_ipcw, brier_score, cumulative_dynamic_auc
+# from DeepHit.summarize_results import run_DeepHit 
 
 
+DSM_model = ['DeepCox', 'DSM', 'DCM', 'DDPSM']
 
 def baseline_fn(baseline, dataset, lr, n_components, n_cauchy, seed, epoch, eta, edit_censor, censor_rate):
     if baseline == 'DeepCox':
-        from auton_survival import DeepCoxPH
         model = DeepCoxPH(layers=[100,100], random_seed = seed)
     if baseline == 'DSM':
-        from auton_survival.models.dsm import DeepSurvivalMachines
         model = DeepSurvivalMachines(k = n_components,
                                 distribution = 'LogNormal',
                                 layers = [100,100], random_seed = seed)
     if baseline == 'DCM':
-        from auton_survival.models.dcm import DeepCoxMixtures
         model = DeepCoxMixtures(k = n_components, layers = [100,100], random_seed = seed)
     if baseline == 'DDPSM':
-        from auton_survival.models.dpsm import DeepDP
         model = DeepDP(k= n_components, k2 = n_cauchy, eta=eta,
                distribution='LogNormal',
                layers=[100,100], random_seed = seed)
@@ -31,9 +37,13 @@ def baseline_fn(baseline, dataset, lr, n_components, n_cauchy, seed, epoch, eta,
     if dataset == 'kkbox':
         x_train, t_train , e_train, x_test, t_test , e_test = kkbox()
         # print(x_train.shape[-1])
-    if dataset == 'mimic':
-        x_train, t_train , e_train, x_test, t_test , e_test = mimic()  
+    if dataset == 'mimic4':
+        x_train, t_train , e_train, x_test, t_test , e_test = mimic4()  
         # print(x_train.shape[-1])
+    if dataset == 'mimic3':
+        x_train, t_train , e_train, x_test, t_test , e_test = mimic3()
+    if dataset == 'metabric':
+        x_train, t_train , e_train, x_test, t_test , e_test = metabric()
 
 
     # if edit_censor:
@@ -43,6 +53,8 @@ def baseline_fn(baseline, dataset, lr, n_components, n_cauchy, seed, epoch, eta,
 
 
     model.fit(x_train, t_train, e_train, iters = epoch, learning_rate = lr)
+
+
     horizons = [0.25, 0.5, 0.75, 0.9]
     x = np.concatenate((x_train, x_test), axis=0)
     t = np.concatenate((t_train, t_test), axis=0)
@@ -51,15 +63,25 @@ def baseline_fn(baseline, dataset, lr, n_components, n_cauchy, seed, epoch, eta,
     out_risk = 1 - model.predict_survival(x_test, times)
     out_survival = model.predict_survival(x_test, times)
     # print(out_survival.shape)
+    t_graph = np.linspace(t[e==1].min(), t[e==0].max(), 1000).tolist()
+    tr_graph = model.predict_survival(x_train, t_graph)
+    te_graph = model.predict_survival(x_test, t_graph)
+    import matplotlib.pyplot as plt
+    graph_x = t_graph
+    graph_y = tr_graph[0,:]
+    plt.plot(graph_x, graph_y, label='train_0')
+    plt.show()
+    plt.savefig('train_0.png')
 
-    from sksurv.metrics import concordance_index_ipcw, brier_score, cumulative_dynamic_auc
+    # import ipdb
+    # ipdb.set_trace()
+
 
     cis = []
     brs = []
 
     et_train = np.array([(e_train[i], t_train[i]) for i in range(len(e_train))],
                     dtype = [('e', bool), ('t', float)])
-    #print(et_train)
     et_test = np.array([(e_test[i], t_test[i]) for i in range(len(e_test))],
                     dtype = [('e', bool), ('t', float)])
     # et_val = np.array([(e_val[i], t_val[i]) for i in range(len(e_val))],
@@ -79,23 +101,11 @@ def baseline_fn(baseline, dataset, lr, n_components, n_cauchy, seed, epoch, eta,
     return cis, brs, roc_auc
     
 
-# %%
-import numpy as np
 
-# # %%
-# x_train, t_train , e_train, x_test, t_test , e_test = mimic()
-# e = np.concatenate((e_train, e_test), axis=0)
-# n_event = np.where(e==1)[0].shape[0]
-# n_censor = e.shape[0] - n_event
-# print(n_event) 
-# print(n_censor)
-# print(n_event / e.shape[0])
-# print(n_censor / e.shape[0])
 
-# %%
-# cis, brs, roc_auc = baseline('DDPSM', 'support', 1e-4, 10, 5, 42)
 
-# %%
+
+
 def result(n_run, model, dataset, lr, k1, k2, epoch, eta, edit_censor, censor_rate):
     cis_list , brs_list, roc_aoc_list = [], [], []
     for j in range(n_run):
@@ -129,17 +139,38 @@ if __name__ == "__main__":
     parse.add_argument('--k1', type=int, default=2)
     parse.add_argument('--k2', type=int, default=1)
     parse.add_argument('--eta', type=float, default=10)
-    parse.add_argument('--edit_censor', type=str, default='False')
+    parse.add_argument('--edit_censor', type=bool, default=False)
+    parse.add_argument('--save_csv', type=bool, default=True)
     args = parse.parse_args()
 
-    # %%
+
     # cis_list, brs_list , roc_aoc_list = result(10, 'DDPSM', 'mimic', 1e-4, 15, 5)
+    if args.model in DSM_model:
+        cis_list, brs_list , roc_aoc_list = result(args.n_run, args.model, args.dataset , args.lr, args.k1, args.k2, args.epoch, args.eta, args.edit_censor, args.censor_rate)
+    # elif args.model == 'DeepHit':
+    #     cis_list, brs_list, roc_auc_list = run_DeepHit(1234, args.dataset)
+    # elif args.model == 'nfm':
+    #     pass
+    # elif args.model == 'Sumo-Net':  
+    #     pass 
+    else:
+        raise ValueError("Model not found")
+    
+    cis_mean = np.round(np.asarray(cis_list).mean(axis=0),4).tolist()
+    cis_std = np.round(np.asarray(cis_list).std(axis=0),4).tolist()
+    brs_mean = np.round(np.asarray(brs_list).mean(axis=0),4).tolist()[0]
+    brs_std = np.round(np.asarray(brs_list).std(axis=0),4).tolist()[0]
+    print(cis_mean, cis_std, brs_mean, brs_std)
 
-    # %%
-    cis_list, brs_list , roc_aoc_list = result(args.n_run, args.model, args.dataset , args.lr, args.k1, args.k2, args.epoch, args.eta, args.edit_censor, args.censor_rate)
-
-    # %%
-    # support_cis_list, support_brs_list , support_roc_aoc_list = result(5, 'DDPSM', 'mimic', 1e-4, 9, 15)
+    if args.save_csv:
+        df = pd.DataFrame({'mean_c-index':cis_mean, 'std_c-index': cis_std,
+                          'mean_brier_score': brs_mean, 'std_brier_score': brs_std}, index=[0.25, 0.5, 0.75, 0.9])
+        dir_path = f'./results/{args.dataset}/'
+        if not os.path.exists(dir_path):
+            os.makedirs(dir_path)
+        save_path = dir_path + f'{args.model}_{args.dataset}_{args.lr}_{args.k1}_{args.k2}.csv'
+        df.to_csv(save_path, index=False)
+        print(f"Save to {args.model}_{args.dataset}.csv")
 
 
 

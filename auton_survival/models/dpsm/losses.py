@@ -496,6 +496,9 @@ def _lognormal_cdf(model, x, t_horizon, risk='1'):
 
     return cdfs
 
+def _lognormal_pdf(model, x, t_horizon, risk='1'):
+    pass
+
 
 def _normal_cdf(model, x, t_horizon, risk='1'):
     squish = nn.LogSoftmax(dim=1)
@@ -569,10 +572,10 @@ def predict_pdf(model, x, t_horizon, risk='1'):
     torch.no_grad()
     if model.dist == 'Weibull':
         return _weibull_pdf(model, x, t_horizon, risk)
-    # if model.dist == 'LogNormal':
-    #   return _lognormal_pdf(model, x, t_horizon, risk)
-    # if model.dist == 'Normal':
-    #   return _normal_pdf(model, x, t_horizon, risk)
+    if model.dist == 'LogNormal':
+       return _lognormal_pdf(model, x, t_horizon, risk)
+    if model.dist == 'Normal':
+       return _normal_pdf(model, x, t_horizon, risk)
     else:
         raise NotImplementedError('Distribution: ' + model.dist +
                                   ' not implemented yet.')

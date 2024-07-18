@@ -172,7 +172,7 @@ def nfm(dataset, n_iter, learning_rate):
 def result(n_run, dataset, lr):
     cis_list , brs_list, roc_aoc_list = [], [], []
     for j in range(n_run):
-        torch.manual_seed(70+j) 
+        torch.manual_seed(42+j) 
         cis, brs, roc_aoc = nfm(dataset, 20, lr)
         cis_list.append(cis)
         brs_list.append(brs)
@@ -192,6 +192,6 @@ def result(n_run, dataset, lr):
 
 cis_list, brs_list , roc_auc_list = result(1, 'kkbox', 1e-6)
 
-np.save('nfm_cis_2.npy', np.array(cis_list))
-np.save('nfm_brs_2.npy', np.array(brs_list))
-np.save('nfm_roc_auc_2.npy', np.array(roc_auc_list))
+np.save('nfm_cis_3.npy', np.array(cis_list))
+np.save('nfm_brs_3.npy', np.array(brs_list))
+np.save('nfm_roc_auc_3.npy', np.array(roc_auc_list))
