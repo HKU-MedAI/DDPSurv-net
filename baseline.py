@@ -14,18 +14,18 @@ from sksurv.metrics import concordance_index_ipcw, brier_score, cumulative_dynam
 
 DSM_model = ['DeepCox', 'DSM', 'DCM', 'DDPSM']
 
-def baseline_fn(baseline, dataset, lr, n_components, n_cauchy, seed, epoch, eta, edit_censor, censor_rate):
+def baseline_fn(baseline, dataset, lr, n_components, n_cauchy, seed, epoch, eta, edit_censor, censor_rate, dist):
     if baseline == 'DeepCox':
         model = DeepCoxPH(layers=[100,100], random_seed = seed)
     if baseline == 'DSM':
         model = DeepSurvivalMachines(k = n_components,
-                                distribution = 'LogNormal',
+                                distribution = dist,
                                 layers = [100,100], random_seed = seed)
     if baseline == 'DCM':
         model = DeepCoxMixtures(k = n_components, layers = [100,100], random_seed = seed)
     if baseline == 'DDPSM':
         model = DeepDP(k= n_components, k2 = n_cauchy, eta=eta,
-               distribution='LogNormal',
+               distribution= dist,
                layers=[100,100], random_seed = seed)
 
     if dataset == 'support':
@@ -106,11 +106,11 @@ def baseline_fn(baseline, dataset, lr, n_components, n_cauchy, seed, epoch, eta,
 
 
 
-def result(n_run, model, dataset, lr, k1, k2, epoch, eta, edit_censor, censor_rate):
+def result(n_run, model, dataset, lr, k1, k2, epoch, eta, edit_censor, censor_rate, dist):
     cis_list , brs_list, roc_aoc_list = [], [], []
     for j in range(n_run):
         seed = 42 + j 
-        cis, brs, roc_aoc = baseline_fn(model, dataset, lr, k1+k2, k2, seed, epoch, eta, edit_censor, censor_rate)
+        cis, brs, roc_aoc = baseline_fn(model, dataset, lr, k1+k2, k2, seed, epoch, eta, edit_censor, censor_rate, dist)
         cis_list.append(cis)
         brs_list.append(brs)
         roc_aoc_list.append(roc_aoc)
@@ -141,12 +141,13 @@ if __name__ == "__main__":
     parse.add_argument('--eta', type=float, default=10)
     parse.add_argument('--edit_censor', type=bool, default=False)
     parse.add_argument('--save_csv', type=bool, default=True)
+    parse.add_argument('--dist', type=str, default='LogNormal')
     args = parse.parse_args()
 
 
     # cis_list, brs_list , roc_aoc_list = result(10, 'DDPSM', 'mimic', 1e-4, 15, 5)
     if args.model in DSM_model:
-        cis_list, brs_list , roc_aoc_list = result(args.n_run, args.model, args.dataset , args.lr, args.k1, args.k2, args.epoch, args.eta, args.edit_censor, args.censor_rate)
+        cis_list, brs_list , roc_aoc_list = result(args.n_run, args.model, args.dataset , args.lr, args.k1, args.k2, args.epoch, args.eta, args.edit_censor, args.censor_rate, args.dist)
     # elif args.model == 'DeepHit':
     #     cis_list, brs_list, roc_auc_list = run_DeepHit(1234, args.dataset)
     # elif args.model == 'nfm':
