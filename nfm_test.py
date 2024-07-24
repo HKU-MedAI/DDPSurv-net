@@ -51,9 +51,15 @@ class own_dataset(Dataset):
 
 
 def nfm(dataset, n_iter, learning_rate):
-    if dataset == 'mimic':
-        trainset = own_dataset(x_path='x_train.npy' , t_path='t_train.npy', e_path='e_train.npy')
-        testset = own_dataset(x_path='x_test.npy' , t_path='t_test.npy', e_path='e_test.npy')
+    if dataset == 'mimic4':
+        trainset = own_dataset(x_path='datasets/mimic4/mimic4_x_train.npy' , t_path='datasets/mimic4/mimic4_t_train.npy', e_path='datasets/mimic4/mimic4_e_train.npy')
+        testset = own_dataset(x_path='datasets/mimic4/mimic4_x_test.npy' , t_path='datasets/mimic4/mimic4_t_test.npy', e_path='datasets/mimic4/mimic4_e_test.npy')
+        loader = DataLoader(trainset, batch_size=128)
+        nll = FullyNeuralNLL(eps_conf=ParetoEps(learnable=True), encoder=Net(num_features = trainset.x.shape[-1])).cuda()
+        optimizer = torch.optim.Adam(lr=learning_rate, weight_decay=1e-3, params=nll.parameters())
+    elif dataset == 'mimic3':
+        trainset = own_dataset(x_path='datasets/mimic3/mimic3_x_train.npy' , t_path='datasets/mimic3/mimic3_t_train.npy', e_path='datasets/mimic3/mimic3_e_train.npy')
+        testset = own_dataset(x_path='datasets/mimic3/mimic3_x_test.npy' , t_path='datasets/mimic3/mimic3_t_test.npy', e_path='datasets/mimic3/mimic3_e_test.npy')
         loader = DataLoader(trainset, batch_size=128)
         nll = FullyNeuralNLL(eps_conf=ParetoEps(learnable=True), encoder=Net(num_features = trainset.x.shape[-1])).cuda()
         optimizer = torch.optim.Adam(lr=learning_rate, weight_decay=1e-3, params=nll.parameters())
@@ -87,7 +93,7 @@ def nfm(dataset, n_iter, learning_rate):
             t = t.to(torch.float32)
             e = e.to(torch.float32)
             nll.train()
-            if dataset == 'mimic':
+            if dataset == 'mimic3' or dataset == 'mimic4':
                 loss = nll(z=x.mean(dim=1).cuda(), y=torch.unsqueeze(t.cuda(),1) / 24., delta=e.cuda())
             elif dataset == 'kkbox':
                 loss = nll(z=x.cuda(), y=t.cuda(), delta=e.cuda())
@@ -122,7 +128,7 @@ def nfm(dataset, n_iter, learning_rate):
         e_test = np.delete(e_test, index)
         x_test = np.delete(x_test, index, axis=0)
         
-        horizons = [0.25]
+        horizons = [0.25, 0.5, 0.75, 0.9]
 
         print(e_train.shape)
         print(e_test.shape)
@@ -133,7 +139,7 @@ def nfm(dataset, n_iter, learning_rate):
 
         tg_test = np.quantile(t[e==1], horizons)
 
-        if dataset == 'mimic':
+        if dataset == 'mimic3' or dataset == 'mimic4':
             out_survival = nll.get_survival_prediction( 
                 z_test=torch.tensor(x_test.mean(axis=1), dtype=torch.float).cuda(), y_test=torch.tensor(tg_test, dtype=torch.float).view(-1, 1).cuda()).cpu().numpy()
         else:
@@ -173,7 +179,7 @@ def result(n_run, dataset, lr):
     cis_list , brs_list, roc_aoc_list = [], [], []
     for j in range(n_run):
         torch.manual_seed(42+j) 
-        cis, brs, roc_aoc = nfm(dataset, 20, lr)
+        cis, brs, roc_aoc = nfm(dataset, 100, lr)
         cis_list.append(cis)
         brs_list.append(brs)
         roc_aoc_list.append(roc_aoc)
@@ -190,8 +196,8 @@ def result(n_run, dataset, lr):
     print(report_str)
     return cis_list, brs_list , roc_aoc_list
 
-cis_list, brs_list , roc_auc_list = result(1, 'kkbox', 1e-6)
+cis_list, brs_list , roc_auc_list = result(5, 'mimic3', 1e-4)
 
-np.save('nfm_cis_3.npy', np.array(cis_list))
-np.save('nfm_brs_3.npy', np.array(brs_list))
-np.save('nfm_roc_auc_3.npy', np.array(roc_auc_list))
+# np.save('nfm_cis_3.npy', np.array(cis_list))
+# np.save('nfm_brs_3.npy', np.array(brs_list))
+# np.save('nfm_roc_auc_3.npy', np.array(roc_auc_list))

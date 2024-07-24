@@ -46,9 +46,10 @@ def baseline_fn(baseline, dataset, lr, n_components, n_cauchy, seed, epoch, eta,
         x_train, t_train , e_train, x_test, t_test , e_test = metabric()
 
 
-    # if edit_censor:
-    #     e_train = edit_censor_rate(censor_rate, e_train, t_train, 'fix')
-    #     e_test = edit_censor_rate(censor_rate, e_test, t_test, 'fix')
+    if edit_censor:
+        t_train, e_train = edit_censor_rate(censor_rate, e_train, t_train, 'fix')
+        t_test, e_test = edit_censor_rate(censor_rate, e_test, t_test, 'fix')
+        print('edit censor rate success')
     
 
 

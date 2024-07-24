@@ -87,6 +87,7 @@ def _lognormal_loss(model, t, e, risk='1'):
 
     return -ll.mean()
 
+##TODO: update pretrain unconditional loss to k1 & k2 version
 
 def _weibull_loss(model, t, e, risk='1'):
     shape, scale = model.get_shape_scale(risk)
@@ -94,17 +95,29 @@ def _weibull_loss(model, t, e, risk='1'):
     k_ = shape.expand(t.shape[0], -1)
     b_ = scale.expand(t.shape[0], -1)
 
+    k1 = model.k - model.k2
+    k2 = model.k2
+
+    uncens = np.where(e.cpu().data.numpy() == int(risk))[0]
+    cens = np.where(e.cpu().data.numpy() != int(risk))[0]
+
     ll = 0.
-    for g in range(model.k):
+    for g in range(k1):
         k = k_[:, g]
         b = b_[:, g]
 
         s = - (torch.pow(torch.exp(b) * t, torch.exp(k)))
         f = k + b + ((torch.exp(k) - 1) * (b + torch.log(t)))
         f = f + s
+        ll += f[uncens].sum() + s[cens].sum()
 
-        uncens = np.where(e.cpu().data.numpy() == int(risk))[0]
-        cens = np.where(e.cpu().data.numpy() != int(risk))[0]
+    for g in range(k2):
+        k = k_[:, k1+g]
+        b = b_[:, k1+g] 
+        f = - torch.log(t * torch.pi) + torch.log(k.clamp(1e-3)) - \
+        torch.log(((torch.log(t) - b) ** 2 + k ** 2).clamp(1e-10))
+        s = 1 / 2 - 1 / torch.pi * torch.arctan((torch.log(t) - b) / k)
+        s = torch.log(s.clamp(min=10 * np.finfo(float).eps))
         ll += f[uncens].sum() + s[cens].sum()
 
     return -ll.mean()
@@ -297,13 +310,17 @@ def weibull_f_s(t, k, b):
 
 def _conditional_weibull_loss(model, x, t, e, elbo=True, risk='1'):
     alpha = model.discount
-    shape, scale, logits = model.forward(x, risk)
+    shape, scale, logits = model.forward(x, risk)   
 
     k_ = shape
     b_ = scale
 
     lossf = []
     losss = []
+
+    # import ipdb 
+    # ipdb.set_trace()
+
 
     k1 = model.k - model.k2
     k2 = model.k2
@@ -438,8 +455,8 @@ def _weibull_cdf(model, x, t_horizon, risk='1'):
 
         lcdfs = torch.stack(lcdfs, dim=1)
         
-        import ipdb
-        ipdb.set_trace()
+        # import ipdb
+        # ipdb.set_trace()
 
         lcdfs = lcdfs + model._estimate_log_weights()
 
