@@ -102,11 +102,6 @@ def baseline_fn(baseline, dataset, lr, n_components, n_cauchy, seed, epoch, eta,
     return cis, brs, roc_auc
     
 
-
-
-
-
-
 def result(n_run, model, dataset, lr, k1, k2, epoch, eta, edit_censor, censor_rate, dist):
     cis_list , brs_list, roc_aoc_list = [], [], []
     for j in range(n_run):
@@ -142,7 +137,7 @@ if __name__ == "__main__":
     parse.add_argument('--eta', type=float, default=10)
     parse.add_argument('--edit_censor', type=bool, default=False)
     parse.add_argument('--save_csv', type=bool, default=True)
-    parse.add_argument('--dist', type=str, default='LogNormal')
+    parse.add_argument('--dist', type=str, default='Weibull')
     args = parse.parse_args()
 
 

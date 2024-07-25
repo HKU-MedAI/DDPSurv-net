@@ -36,7 +36,8 @@ from auton_survival.models.dpsm import DeepDP
 from sklearn.model_selection import ParameterGrid
 
 param_grid = {'k' : [10],
-              'distribution' : ['LogNormal'],
+                'k2' : [5],
+              'distribution' : ['Weibull'],
               'learning_rate' : [ 1e-4, 1e-3],
               'layers' : [ [], [100], [100, 100] ]
              }
@@ -45,9 +46,12 @@ params = ParameterGrid(param_grid)
 
 models = []
 for param in params:
-    model = DeepDP(k = param['k'],
-                                 distribution = param['distribution'],
-                                 layers = param['layers'])
+    model = DeepDP(
+        k = param['k'],
+        k2 = param['k2'],
+        distribution = param['distribution'],
+        layers = param['layers']
+    )
     # The fit method is called to train the model
     model.fit(x_train, t_train, e_train, iters = 100, learning_rate = param['learning_rate'])
     models.append([[model.compute_nll(x_val, t_val, e_val), model]])

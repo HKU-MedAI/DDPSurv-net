@@ -308,7 +308,7 @@ class DPSMBase():
         for r in range(self.torch_model.risks):
             loss += float(losses.conditional_loss(self.torch_model,
                                                   x_val, t_val, e_val, elbo=False,
-                                                  risk=str(r + 1)).detach().numpy())
+                                                  risk=str(r + 1)).cpu().detach().numpy())
         return loss
 
     def _preprocess_test_data(self, x):

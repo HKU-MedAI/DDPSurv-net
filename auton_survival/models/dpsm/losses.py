@@ -119,8 +119,6 @@ def _weibull_loss(model, t, e, risk='1'):
         s = 1 / 2 - 1 / torch.pi * torch.arctan((torch.log(t) - b) / k)
         s = torch.log(s.clamp(min=10 * np.finfo(float).eps))
         ll += f[uncens].sum() + s[cens].sum()
-    
-
 
     return -ll.mean()
 
@@ -304,26 +302,24 @@ def _conditional_lognormal_loss(model, x, t, e, elbo=True, risk='1'):
 
 
 def weibull_f_s(t, k, b):
-    s = - (torch.pow(torch.exp(b)*t, torch.exp(k)))
+    s = - (torch.pow((torch.exp(b)*t).clamp(max=8), torch.exp(k)))
     f = k + b + ((torch.exp(k)-1)*(b+torch.log(t)))
     f = f + s
+    assert not torch.isinf(f).any()
+    f = f.clamp(min=torch.min(f[torch.isfinite(f)]))
+    s = s.clamp(min=torch.min(f[torch.isfinite(s)]))
 
     return f, s
 
 def _conditional_weibull_loss(model, x, t, e, elbo=True, risk='1'):
     alpha = model.discount
-    shape, scale, logits = model.forward(x, risk)   
+    shape, scale, _ = model.forward(x, risk)
 
     k_ = shape
     b_ = scale
 
-
     lossf = []
     losss = []
-
-    # import ipdb 
-    # ipdb.set_trace()
-
 
     k1 = model.k - model.k2
     k2 = model.k2
@@ -333,7 +329,7 @@ def _conditional_weibull_loss(model, x, t, e, elbo=True, risk='1'):
         sigma = b_[:, g]
 
         f, s = weibull_f_s(t, mu, sigma)
-        assert not torch.isnan(f).any()
+
         lossf.append(f)
         losss.append(s)
 
@@ -350,14 +346,16 @@ def _conditional_weibull_loss(model, x, t, e, elbo=True, risk='1'):
 
     logits = losss + lossf + model._estimate_log_weights()
     logits = torch.log_softmax(logits, dim=1)
+    logits = logits.clamp(min=torch.min(logits[torch.isfinite(logits)]))
+
+    assert not torch.isinf(logits).any()
+
     model.set_log_phi(logits.data)
     model.update_phi()  # TODO: Update of phi too frequent, need to introduce degree of freedom
-    
-    assert not torch.isnan(logits).any()
 
     if elbo:
 
-        lossg = nn.Softmax(dim=1)(logits).clamp(min=10 ** -8)
+        lossg = nn.Softmax(dim=1)(logits).clamp(min=1e-8)
         losss = lossg * losss
         lossf = lossg * lossf
         losss = losss.sum(dim=1)
@@ -374,7 +372,6 @@ def _conditional_weibull_loss(model, x, t, e, elbo=True, risk='1'):
     uncens = np.where(e.cpu().data.numpy() == int(risk))[0]
     cens = np.where(e.cpu().data.numpy() != int(risk))[0]
     ll = lossf[uncens].sum() + alpha * losss[cens].sum()
-
 
     return -ll / float(len(uncens) + len(cens))
 
