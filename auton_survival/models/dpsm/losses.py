@@ -119,6 +119,8 @@ def _weibull_loss(model, t, e, risk='1'):
         s = 1 / 2 - 1 / torch.pi * torch.arctan((torch.log(t) - b) / k)
         s = torch.log(s.clamp(min=10 * np.finfo(float).eps))
         ll += f[uncens].sum() + s[cens].sum()
+    
+
 
     return -ll.mean()
 
@@ -190,11 +192,11 @@ def _conditional_normal_loss(model, x, t, e, elbo=True, risk='1'):
     return -ll / float(len(uncens) + len(cens))
 
 
-def log_cauchy(t, mu, sigma):
-    f = - torch.log(t * torch.pi) + torch.log(sigma.clamp(1e-3)) - \
-        torch.log(((torch.log(t) - mu) ** 2 + sigma ** 2).clamp(1e-10))
+def log_cauchy(t, mu, log_sigma):
+    f = - torch.log(t * torch.pi) + log_sigma - \
+        torch.log1p(((torch.log(t) - mu) ** 2 + torch.log1p(torch.exp(log_sigma)) ** 2).clamp(1e-10))
     # f = f.clamp(min=10 * np.finfo(float).eps)
-    s = 1 / 2 - 1 / torch.pi * torch.arctan((torch.log(t) - mu) / sigma)
+    s = 1 / 2 - 1 / torch.pi * torch.arctan((torch.log(t) - mu) / torch.log1p(torch.exp(log_sigma)))
     s = torch.log(s.clamp(min=10 * np.finfo(float).eps))
     return f, s
 
@@ -315,6 +317,7 @@ def _conditional_weibull_loss(model, x, t, e, elbo=True, risk='1'):
     k_ = shape
     b_ = scale
 
+
     lossf = []
     losss = []
 
@@ -330,6 +333,7 @@ def _conditional_weibull_loss(model, x, t, e, elbo=True, risk='1'):
         sigma = b_[:, g]
 
         f, s = weibull_f_s(t, mu, sigma)
+        assert not torch.isnan(f).any()
         lossf.append(f)
         losss.append(s)
 
@@ -348,10 +352,12 @@ def _conditional_weibull_loss(model, x, t, e, elbo=True, risk='1'):
     logits = torch.log_softmax(logits, dim=1)
     model.set_log_phi(logits.data)
     model.update_phi()  # TODO: Update of phi too frequent, need to introduce degree of freedom
+    
+    assert not torch.isnan(logits).any()
 
     if elbo:
 
-        lossg = nn.Softmax(dim=1)(logits)
+        lossg = nn.Softmax(dim=1)(logits).clamp(min=10 ** -8)
         losss = lossg * losss
         lossf = lossg * lossf
         losss = losss.sum(dim=1)
@@ -368,6 +374,7 @@ def _conditional_weibull_loss(model, x, t, e, elbo=True, risk='1'):
     uncens = np.where(e.cpu().data.numpy() == int(risk))[0]
     cens = np.where(e.cpu().data.numpy() != int(risk))[0]
     ll = lossf[uncens].sum() + alpha * losss[cens].sum()
+
 
     return -ll / float(len(uncens) + len(cens))
 
