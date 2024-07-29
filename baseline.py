@@ -9,6 +9,8 @@ from auton_survival.models.dcm import DeepCoxMixtures
 from auton_survival.models.dpsm import DeepDP
 import os
 from sksurv.metrics import concordance_index_ipcw, brier_score, cumulative_dynamic_auc
+from distribution import weibull, lognormal, logcauchy
+import matplotlib.pyplot as plt
 # from DeepHit.summarize_results import run_DeepHit 
 
 
@@ -54,6 +56,30 @@ def baseline_fn(baseline, dataset, lr, n_components, n_cauchy, seed, epoch, eta,
 
 
     model.fit(x_train, t_train, e_train, iters = epoch, learning_rate = lr)
+    shape, scale = model.show_distribution_params(x_train, risk='1')
+    shape = shape.cpu().detach().numpy().mean(axis=0)
+    scale = scale.cpu().detach().numpy().mean(axis=0)
+    # print(f"Shape: {shape}, Scale: {scale}")
+    # print(shape.shape, scale.shape)
+    if args.plot_dist:
+        x_plot = np.linspace(0.01, 10, 5000)
+        for i in range(model.k - model.k2):
+            if dist == 'Weibull':
+                y_plot = weibull(x_plot, np.abs(shape[i]), np.exp(scale[i]))
+                # import ipdb
+                # ipdb.set_trace()
+            elif dist == 'LogNormal':
+                y_plot = lognormal(x_plot, np.abs(shape[i]), np.exp(scale[i]))
+            plt.plot(x_plot, y_plot, label=f'Component {i}')
+        for j in range(model.k2):
+            y_plot = logcauchy(x_plot, np.abs(shape[model.k - model.k2 + j]), np.exp(scale[model.k - model.k2 + j]))
+            plt.plot(x_plot, y_plot, label=f'Component {model.k - model.k2 + j}')
+        plt.legend()
+        plt.show()
+        plt.savefig(f'./results/{args.dataset}/{args.k1}_{args.k2}_distribution.png')
+
+    
+
 
 
     horizons = [0.25, 0.5, 0.75, 0.9]
@@ -64,15 +90,14 @@ def baseline_fn(baseline, dataset, lr, n_components, n_cauchy, seed, epoch, eta,
     out_risk = 1 - model.predict_survival(x_test, times)
     out_survival = model.predict_survival(x_test, times)
     # print(out_survival.shape)
-    t_graph = np.linspace(t[e==1].min(), t[e==0].max(), 1000).tolist()
-    tr_graph = model.predict_survival(x_train, t_graph)
-    te_graph = model.predict_survival(x_test, t_graph)
-    import matplotlib.pyplot as plt
-    graph_x = t_graph
-    graph_y = tr_graph[0,:]
-    plt.plot(graph_x, graph_y, label='train_0')
-    plt.show()
-    plt.savefig('train_0.png')
+    # t_graph = np.linspace(t[e==1].min(), t[e==0].max(), 1000).tolist()
+    # tr_graph = model.predict_survival(x_train, t_graph)
+    # te_graph = model.predict_survival(x_test, t_graph)
+    # graph_x = t_graph
+    # graph_y = tr_graph[0,:]
+    # plt.plot(graph_x, graph_y, label='train_0')
+    # plt.show()
+    # plt.savefig('survival_distribution.png')
 
     # import ipdb
     # ipdb.set_trace()
@@ -138,6 +163,7 @@ if __name__ == "__main__":
     parse.add_argument('--edit_censor', type=bool, default=False)
     parse.add_argument('--save_csv', type=bool, default=True)
     parse.add_argument('--dist', type=str, default='Weibull')
+    parse.add_argument('--plot_dist', type=bool, default=True)
     args = parse.parse_args()
 
 

@@ -449,6 +449,17 @@ class DPSMBase():
             raise Exception("The model has not been fitted yet. Please fit the " +
                             "model using the `fit` method on some training data " +
                             "before calling `predict_survival`.")
+    
+    def show_distribution_params(self, x, risk=1):
+        r"""Returns the estimated parameters of the underlying distributionfor the given risk.
+        """
+        if self.fitted:
+            shape, scale, _ = self.torch_model.forward(torch.tensor(x).cuda(), risk='1')
+            return shape, scale
+        else:
+            raise Exception("The model has not been fitted yet. Please fit the " +
+                            "model using the `fit` method on some training data " +
+                            "before calling `show_distribution_params`.")
 
 
 class DeepDP(DPSMBase):
