@@ -182,7 +182,7 @@ __pdoc__["DPSMBase"] = False
 class DPSMBase():
     """Base Class for all DSM models"""
 
-    def __init__(self, k=3, k2 = 0, eta=10, layers=None, distribution="Weibull",
+    def __init__(self, k=3, k2 =1, eta=10, layers=None, distribution="Weibull",
                  temp=1000., discount=1.0, random_seed=0):
         self.k = k
         self.k2 = k2

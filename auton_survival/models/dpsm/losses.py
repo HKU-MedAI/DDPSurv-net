@@ -38,6 +38,7 @@ These losses are optimized when training DSM.
 import numpy as np
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 
 def _normal_loss(model, t, e, risk='1'):
@@ -115,7 +116,11 @@ def _weibull_loss(model, t, e, risk='1'):
 
     for g in range(k2):
         k = k_[:, k1+g]
-        b = b_[:, k1+g] 
+        b = b_[:, k1+g]
+
+        k = F.relu(k)
+        b = F.relu(b)
+
         f = - torch.log(t * torch.pi) + torch.log(k.clamp(1e-3)) - \
         torch.log(((torch.log(t) - b) ** 2 + k ** 2).clamp(1e-10))
         s = 1 / 2 - 1 / torch.pi * torch.arctan((torch.log(t) - b) / k)
@@ -303,9 +308,11 @@ def _conditional_lognormal_loss(model, x, t, e, elbo=True, risk='1'):
     return -ll / float(len(uncens) + len(cens))
 
 
-def weibull_f_s(t, k, b):
-    s = - (torch.pow((torch.exp(b)*t).clamp(max=8), torch.exp(k)))
-    f = k + b + ((torch.exp(k)-1)*(b + torch.log(t)))
+
+def weibull_f_s(t, log_k, log_b):
+    b = torch.exp(log_b)
+    s = - (torch.pow((torch.exp(torch.exp(log_b))*t).clamp(max=8), torch.exp(torch.exp(log_k))))
+    f = torch.exp(log_k) + torch.exp(log_b) + ((torch.exp(torch.exp(log_k))-1)*(torch.exp(log_b) + torch.log(t)))
     f = f + s
     assert not torch.isinf(f).any()
     f = f.clamp(min=torch.min(f[torch.isfinite(f)]))
@@ -338,6 +345,8 @@ def _conditional_weibull_loss(model, x, t, e, elbo=True, risk='1'):
     for g in range(k2):
         mu = k_[:, g + k1]
         sigma = b_[:, g + k1]
+
+        sigma = F.relu(sigma)
 
         f, s = log_cauchy(t, mu, sigma)
         lossf.append(f)
