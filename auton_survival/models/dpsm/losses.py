@@ -91,8 +91,8 @@ def _lognormal_loss(model, t, e, risk='1'):
 
 def _weibull_loss(model, t, e, risk='1'):
     shape, scale = model.get_shape_scale(risk)
-    shape = torch.exp(shape)
-    scale = torch.exp(scale)
+    # shape = torch.exp(shape)
+    # scale = torch.exp(scale)
 
     k_ = shape.expand(t.shape[0], -1)
     b_ = scale.expand(t.shape[0], -1)
@@ -192,19 +192,19 @@ def _conditional_normal_loss(model, x, t, e, elbo=True, risk='1'):
     return -ll / float(len(uncens) + len(cens))
 
 
-def log_cauchy(t, mu, log_sigma):
-    f = - torch.log(t * torch.pi) + log_sigma - \
-        torch.log1p(((torch.log(t) - mu) ** 2 + torch.log1p(torch.exp(log_sigma)) ** 2).clamp(1e-10))
+def log_cauchy(t, mu, sigma):
+    f = - torch.log(t * torch.pi) + torch.log(sigma) - \
+        torch.log1p((torch.log(t) - mu) ** 2 + torch.log1p(sigma ** 2).clamp(1e-10))
     # f = f.clamp(min=10 * np.finfo(float).eps)
-    s = 1 / 2 - 1 / torch.pi * torch.arctan((torch.log(t) - mu) / torch.log1p(torch.exp(log_sigma)))
+    s = 1 / 2 - 1 / torch.pi * torch.arctan(torch.log(t) - mu) / torch.log1p(sigma)
     s = torch.log(s.clamp(min=10 * np.finfo(float).eps))
     return f, s
 
 
-def lognormal(t, mu, log_sigma):
-    f = - torch.exp(log_sigma) - 0.5 * np.log(2 * np.pi)
-    f = f - torch.div((torch.log(t) - mu) ** 2, 2. * torch.exp(2 * torch.exp(log_sigma)))
-    s = torch.div(torch.log(t) - mu, torch.exp(torch.exp(log_sigma)) * np.sqrt(2))
+def lognormal(t, mu, sigma):
+    f = - sigma - 0.5 * np.log(2 * np.pi)
+    f = f - torch.div((torch.log(t) - mu) ** 2, 2. * torch.exp(2 * sigma))
+    s = torch.div(torch.log(t) - mu, torch.exp(sigma) * np.sqrt(2))
     s = 0.5 - 0.5 * torch.erf(s)
     s += 10 * np.finfo(float).eps
     s = torch.log(s)
@@ -303,9 +303,9 @@ def _conditional_lognormal_loss(model, x, t, e, elbo=True, risk='1'):
     return -ll / float(len(uncens) + len(cens))
 
 
-def weibull_f_s(t, log_k, log_b):
-    s = - (torch.pow((torch.exp(torch.exp(log_b))*t).clamp(max=8), torch.exp(torch.exp(log_k))))
-    f = torch.exp(log_k) + torch.exp(log_b) + ((torch.exp(torch.exp(log_k))-1)*(torch.exp(log_b) + torch.log(t)))
+def weibull_f_s(t, k, b):
+    s = - (torch.pow((torch.exp(b)*t).clamp(max=8), torch.exp(k)))
+    f = k + b + ((torch.exp(k)-1)*(b + torch.log(t)))
     f = f + s
     assert not torch.isinf(f).any()
     f = f.clamp(min=torch.min(f[torch.isfinite(f)]))
@@ -350,7 +350,7 @@ def _conditional_weibull_loss(model, x, t, e, elbo=True, risk='1'):
     logits = torch.log_softmax(logits, dim=1)
     logits = logits.clamp(min=torch.min(logits[torch.isfinite(logits)]))
 
-    assert not torch.isinf(logits).any()
+    # assert not torch.isinf(logits).any()
 
     model.set_log_phi(logits.data)
     model.update_phi()  # TODO: Update of phi too frequent, need to introduce degree of freedom

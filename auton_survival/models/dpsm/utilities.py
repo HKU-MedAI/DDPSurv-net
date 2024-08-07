@@ -54,7 +54,7 @@ def get_optimizer(model, lr):
 def pretrain_dpsm(model, t_train, e_train, t_valid, e_valid,
                  n_iter=1000, lr=1e-2, thres=1e-4):
 
-  premodel = DeepDPTorch(1, 1, 0, 10,
+  premodel = DeepDPTorch(1, model.k, model.k2, 10,
                                        dist=model.dist,
                                        risks=model.risks,
                                        optimizer=model.optimizer).cuda()
@@ -138,12 +138,12 @@ def train_dpsm(model,
                           n_iter=10000,
                           lr=1e-2,
                           thres=1e-4)
-
+  # import ipdb
+  # ipdb.set_trace()
 
   for r in range(model.risks):
-    model.shape[str(r+1)].data.fill_(float(premodel.shape[str(r+1)]))
-    model.scale[str(r+1)].data.fill_(float(premodel.scale[str(r+1)]))
-
+    model.shape[str(r+1)] = premodel.shape[str(r+1)].float()
+    model.scale[str(r+1)] = premodel.scale[str(r+1)].float()
   model.double()
   optimizer = get_optimizer(model, lr)
 
