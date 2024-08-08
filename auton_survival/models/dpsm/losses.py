@@ -118,8 +118,8 @@ def _weibull_loss(model, t, e, risk='1'):
         k = k_[:, k1+g]
         b = b_[:, k1+g]
 
-        k = F.relu(k)
-        b = F.relu(b)
+        k = torch.exp(k)
+        b = torch.exp(b)
 
         f = - torch.log(t * torch.pi) + torch.log(k.clamp(1e-3)) - \
         torch.log(((torch.log(t) - b) ** 2 + k ** 2).clamp(1e-10))
@@ -308,16 +308,25 @@ def _conditional_lognormal_loss(model, x, t, e, elbo=True, risk='1'):
     return -ll / float(len(uncens) + len(cens))
 
 
-def weibull_f_s(t, log_k, log_b):
-    b = torch.exp(log_b)
-    s = - (torch.pow((torch.exp(torch.exp(log_b))*t).clamp(max=8), torch.exp(torch.exp(log_k))))
-    f = torch.exp(log_k) + torch.exp(log_b) + ((torch.exp(torch.exp(log_k))-1)*(torch.exp(log_b) + torch.log(t)))
+def weibull_f_s(t, k, b):
+    s = - (torch.pow((torch.exp(b)*t).clamp(max=8), torch.exp(k)))
+    f = k + b + ((torch.exp(k)-1)*(b + torch.log(t)))
     f = f + s
     assert not torch.isinf(f).any()
     f = f.clamp(min=torch.min(f[torch.isfinite(f)]))
     s = s.clamp(min=torch.min(f[torch.isfinite(s)]))
 
     return f, s
+
+# def weibull_f_s(t, log_k, log_b):
+#     s = - (torch.pow((torch.exp(torch.exp(log_b))*t).clamp(max=8), torch.exp(torch.exp(log_k))))
+#     f = torch.exp(log_k) + torch.exp(log_b) + ((torch.exp(torch.exp(log_k))-1)*(torch.exp(log_b) + torch.log(t)))
+#     f = f + s
+#     assert not torch.isinf(f).any()
+#     f = f.clamp(min=torch.min(f[torch.isfinite(f)]))
+#     s = s.clamp(min=torch.min(f[torch.isfinite(s)]))
+#
+#     return f, s
 
 def _conditional_weibull_loss(model, x, t, e, elbo=True, risk='1'):
     alpha = model.discount
@@ -345,8 +354,6 @@ def _conditional_weibull_loss(model, x, t, e, elbo=True, risk='1'):
         mu = k_[:, g + k1]
         sigma = b_[:, g + k1]
 
-        sigma = F.relu(sigma)
-
         f, s = log_cauchy(t, mu, sigma)
         lossf.append(f)
         losss.append(s)
@@ -359,6 +366,7 @@ def _conditional_weibull_loss(model, x, t, e, elbo=True, risk='1'):
     logits = logits.clamp(min=torch.min(logits[torch.isfinite(logits)]))
 
     assert not torch.isinf(logits).any()
+    assert not torch.isnan(logits).any()
 
     model.set_log_phi(logits.data)
     model.update_phi()  # TODO: Update of phi too frequent, need to introduce degree of freedom
