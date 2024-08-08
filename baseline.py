@@ -59,6 +59,8 @@ def baseline_fn(baseline, dataset, lr, n_components, n_cauchy, seed, epoch, eta,
     shape, scale = model.show_distribution_params(x_train, risk='1')
     shape = shape.cpu().detach().numpy().mean(axis=0)
     scale = scale.cpu().detach().numpy().mean(axis=0)
+    # import ipdb
+    # ipdb.set_trace()
 
     # print(f"Shape: {shape}, Scale: {scale}")
     # print(shape.shape, scale.shape)
