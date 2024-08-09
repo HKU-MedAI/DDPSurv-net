@@ -59,21 +59,23 @@ def baseline_fn(baseline, dataset, lr, n_components, n_cauchy, seed, epoch, eta,
     shape, scale = model.show_distribution_params(x_train, risk='1')
     shape = shape.cpu().detach().numpy().mean(axis=0)
     scale = scale.cpu().detach().numpy().mean(axis=0)
+    print(shape, np.exp(scale)) 
 
 
     # print(f"Shape: {shape}, Scale: {scale}")
     # print(shape.shape, scale.shape)
     if args.plot_dist:
-        x_plot = np.linspace(0.01, 10, 5000)
+        x_plot = np.linspace(0.1, t_test.max(), 5000)
+        plt.ylim(0, 0.1)
         for i in range(model.k - model.k2):
             if dist == 'Weibull':
-                y_plot = weibull(x_plot, np.abs(shape[i]), np.exp(scale[i]))
+                y_plot = weibull(x_plot, shape[i], np.exp(scale[i]))
 
             elif dist == 'LogNormal':
                 y_plot = lognormal(x_plot, shape[i], np.exp(scale[i]))
             plt.plot(x_plot, y_plot, label=f'Component {i}')
         for j in range(model.k2):
-            y_plot = logcauchy(x_plot, np.abs(shape[model.k - model.k2 + j]), np.exp(scale[model.k - model.k2 + j]))
+            y_plot = logcauchy(x_plot, shape[model.k - model.k2 + j], np.exp(scale[model.k - model.k2 + j]))
             plt.plot(x_plot, y_plot, label=f'Component {model.k - model.k2 + j}')
         plt.legend()
         plt.show()

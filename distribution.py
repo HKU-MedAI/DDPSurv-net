@@ -8,7 +8,8 @@ def logcauchy(x, mu, sigma):
     return pdf
 
 def lognormal(x, mu, sigma):
-    return lognorm.pdf(x, loc=mu, scale=sigma)
+    pdf = np.exp(-np.log(x) - np.log(sigma) - 0.5 * np.log(2 * np.pi) - ((np.log(x) - mu) ** 2) / (2 * sigma ** 2))
+    return pdf
 
 def weibull(x, mu, sigma):
     pdf = mu/sigma * (x/sigma)**(mu-1) * np.exp(-(x/sigma)**mu)
