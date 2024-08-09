@@ -308,6 +308,7 @@ def _conditional_lognormal_loss(model, x, t, e, elbo=True, risk='1'):
 
 def weibull_f_s(t, k, b):
     s = - (torch.pow((torch.exp(b)*t).clamp(max=6), torch.exp(k)))
+    # \lambda = exp(-b); k =expk
     f = k + b + ((torch.exp(k)-1)*(b + torch.log(t)))
     f = f + s
 

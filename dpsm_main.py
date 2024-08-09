@@ -38,7 +38,7 @@ from sklearn.model_selection import ParameterGrid
 param_grid = {'k' : [4],
                 'k2' : [1],
               'distribution' : ['Weibull'],
-              'learning_rate' : [ 1e-4, 1e-3],
+              'learning_rate' : [ 1e-4],
               'layers' : [ [], [100], [100, 100] ]
              }
 
@@ -53,7 +53,7 @@ for param in params:
         layers = param['layers']
     )
     # The fit method is called to train the model
-    model.fit(x_train, t_train, e_train, iters = 2, learning_rate = param['learning_rate'])
+    model.fit(x_train, t_train, e_train, iters = 20, learning_rate = param['learning_rate'])
     models.append([[model.compute_nll(x_val, t_val, e_val), model]])
 
 best_model = min(models)
