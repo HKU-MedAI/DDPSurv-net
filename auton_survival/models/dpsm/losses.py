@@ -118,13 +118,7 @@ def _weibull_loss(model, t, e, risk='1'):
         k = k_[:, k1+g]
         b = b_[:, k1+g]
 
-        k = torch.exp(k)
-        b = torch.exp(b)
-
-        f = - torch.log(t * torch.pi) + torch.log(k.clamp(1e-3)) - \
-        torch.log(((torch.log(t) - b) ** 2 + k ** 2).clamp(1e-10))
-        s = 1 / 2 - 1 / torch.pi * torch.arctan((torch.log(t) - b) / k)
-        s = torch.log(s.clamp(min=10 * np.finfo(float).eps))
+        f, s = log_cauchy(t, k, b)
         ll += f[uncens].sum() + s[cens].sum()
 
     return -ll.mean()
@@ -198,18 +192,23 @@ def _conditional_normal_loss(model, x, t, e, elbo=True, risk='1'):
 
 
 def log_cauchy(t, mu, log_sigma):
+    sigma = torch.exp(log_sigma).clamp(1e-5)
+
     f = - torch.log(t * torch.pi) + log_sigma - \
-        torch.log1p((torch.log(t) - mu) ** 2 + torch.log1p(torch.exp(log_sigma) ** 2).clamp(1e-10))
+        torch.log1p(((torch.log(t) - mu) ** 2 + sigma ** 2).clamp(1e-10))
     # f = f.clamp(min=10 * np.finfo(float).eps)
-    s = 1 / 2 - 1 / torch.pi * torch.arctan(torch.log(t) - mu) / torch.log1p(torch.exp(log_sigma))
+    s = 1 / 2 - 1 / torch.pi * torch.arctan((torch.log(t) - mu) / sigma)
+
     s = torch.log(s.clamp(min=10 * np.finfo(float).eps))
     return f, s
 
 
 def lognormal(t, mu, log_sigma):
+    sigma = torch.exp(log_sigma).clamp(1e-5)
+
     f = - torch.exp(log_sigma) - 0.5 * np.log(2 * np.pi)
-    f = f - torch.div((torch.log(t) - mu) ** 2, 2. * torch.exp(2 * torch.exp(log_sigma)))
-    s = torch.div(torch.log(t) - mu, torch.exp(torch.exp(log_sigma)) * np.sqrt(2))
+    f = f - torch.div((torch.log(t) - mu) ** 2, 2. * torch.exp(2 * sigma))
+    s = torch.div(torch.log(t) - mu, torch.exp(sigma) * np.sqrt(2))
     s = 0.5 - 0.5 * torch.erf(s)
     s += 10 * np.finfo(float).eps
     s = torch.log(s)
@@ -309,12 +308,14 @@ def _conditional_lognormal_loss(model, x, t, e, elbo=True, risk='1'):
 
 
 def weibull_f_s(t, k, b):
-    s = - (torch.pow((torch.exp(b)*t).clamp(max=8), torch.exp(k)))
+    s = - (torch.pow((torch.exp(b)*t).clamp(max=6), torch.exp(k)))
+    # \lambda = exp(-b); k =expk
     f = k + b + ((torch.exp(k)-1)*(b + torch.log(t)))
     f = f + s
-    assert not torch.isinf(f).any()
+
     f = f.clamp(min=torch.min(f[torch.isfinite(f)]))
     s = s.clamp(min=torch.min(f[torch.isfinite(s)]))
+    assert not torch.isinf(f).any()
 
     return f, s
 
@@ -362,8 +363,7 @@ def _conditional_weibull_loss(model, x, t, e, elbo=True, risk='1'):
     lossf = torch.stack(lossf, dim=1)
 
     logits = losss + lossf + model._estimate_log_weights()
-    logits = torch.log_softmax(logits, dim=1)
-    logits = logits.clamp(min=torch.min(logits[torch.isfinite(logits)]))
+    # logits = torch.log_softmax(logits, dim=1)
 
 
     assert not torch.isinf(logits).any()
