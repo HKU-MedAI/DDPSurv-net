@@ -59,8 +59,7 @@ def baseline_fn(baseline, dataset, lr, n_components, n_cauchy, seed, epoch, eta,
     shape, scale = model.show_distribution_params(x_train, risk='1')
     shape = shape.cpu().detach().numpy().mean(axis=0)
     scale = scale.cpu().detach().numpy().mean(axis=0)
-    # import ipdb
-    # ipdb.set_trace()
+
 
     # print(f"Shape: {shape}, Scale: {scale}")
     # print(shape.shape, scale.shape)
@@ -71,14 +70,14 @@ def baseline_fn(baseline, dataset, lr, n_components, n_cauchy, seed, epoch, eta,
                 y_plot = weibull(x_plot, np.abs(shape[i]), np.exp(scale[i]))
 
             elif dist == 'LogNormal':
-                y_plot = lognormal(x_plot, np.abs(shape[i]), np.exp(scale[i]))
+                y_plot = lognormal(x_plot, shape[i], np.exp(scale[i]))
             plt.plot(x_plot, y_plot, label=f'Component {i}')
         for j in range(model.k2):
             y_plot = logcauchy(x_plot, np.abs(shape[model.k - model.k2 + j]), np.exp(scale[model.k - model.k2 + j]))
             plt.plot(x_plot, y_plot, label=f'Component {model.k - model.k2 + j}')
         plt.legend()
         plt.show()
-        plt.savefig(f'./results/{args.dataset}/{args.k1}_{args.k2}_distribution.png')
+        plt.savefig(f'./results/{args.dataset}/{args.dist}_{args.k1}_{args.k2}_distribution.png')
 
     
 
