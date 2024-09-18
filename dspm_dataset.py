@@ -200,7 +200,7 @@ def edit_censor_rate(censor_rate, e, t, method):
         e[censor_index] = 0
     if method == 'fix':
         n_lack = n_set - n_default
-        print(n_set, n_default, n_lack)
+        print(n_set, n_default, n_lack, censor_rate)
         assert n_lack > 0
         new_censor_index = np.random.choice(default_non_censor_idx, n_lack, replace=False)
         e[new_censor_index] = 0

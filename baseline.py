@@ -16,7 +16,15 @@ import matplotlib.pyplot as plt
 
 DSM_model = ['DeepCox', 'DSM', 'DCM', 'DDPSM']
 
-def baseline_fn(baseline, dataset, lr, n_components, n_cauchy, seed, epoch, eta, edit_censor, censor_rate, dist):
+def compute_mrl(tau, survival , t):
+    t_re =  t[t >= tau]
+    s_re = survival[t >= tau]
+    mrl = np.trapz(s_re, t_re) / s_re[0]
+
+    return mrl
+
+
+def baseline_fn(baseline, dataset, lr, n_components, n_cauchy, seed, epoch, eta, edit_censor, censor_rate, dist, plot_dist = False):
     if baseline == 'DeepCox':
         model = DeepCoxPH(layers=[100,100], random_seed = seed)
     if baseline == 'DSM':
@@ -59,27 +67,41 @@ def baseline_fn(baseline, dataset, lr, n_components, n_cauchy, seed, epoch, eta,
     shape, scale = model.show_distribution_params(x_train, risk='1')
     shape = shape.cpu().detach().numpy().mean(axis=0)
     scale = scale.cpu().detach().numpy().mean(axis=0)
-    print(shape, np.exp(scale)) 
+    # print(shape, np.exp(scale)) 
 
 
     # print(f"Shape: {shape}, Scale: {scale}")
     # print(shape.shape, scale.shape)
-    if args.plot_dist:
-        x_plot = np.linspace(0.1, t_test.max(), 5000)
-        plt.ylim(0, 0.1)
-        for i in range(model.k - model.k2):
-            if dist == 'Weibull':
-                y_plot = weibull(x_plot, shape[i], np.exp(scale[i]))
-
-            elif dist == 'LogNormal':
-                y_plot = lognormal(x_plot, shape[i], np.exp(scale[i]))
-            plt.plot(x_plot, y_plot, label=f'Component {i}')
-        for j in range(model.k2):
-            y_plot = logcauchy(x_plot, shape[model.k - model.k2 + j], np.exp(scale[model.k - model.k2 + j]))
-            plt.plot(x_plot, y_plot, label=f'Component {model.k - model.k2 + j}')
-        plt.legend()
-        plt.show()
-        plt.savefig(f'./results/{args.dataset}/{args.dist}_{args.k1}_{args.k2}_distribution.png')
+    k = n_components
+    k2 = n_cauchy
+    k1 = k - k2
+    plot_data = []
+    # if plot_dist:
+    #     x_plot = np.linspace(0.1, t_test.max(), 5000)
+    #     plot_data.append(x_plot)
+    #     for i in range(k1):
+    #         if dist == 'Weibull':
+    #             y_plot = weibull(x_plot, shape[i], np.exp(scale[i]))
+    #             plot_data.append(y_plot)
+    #         elif dist == 'LogNormal':
+    #             y_plot = lognormal(x_plot, shape[i], np.exp(scale[i]))
+    #             plot_data.append(y_plot)
+    #         plt.subplot(2, k1, i + 1)
+    #         plt.plot(x_plot, y_plot, label=f'Component {i}')
+    #     for j in range(model.k2):
+    #         y_plot = logcauchy(x_plot, shape[k1 + j], np.exp(scale[k1 + j]))
+    #         plot_data.append(y_plot)
+    #         plt.subplot(2, k1, k1 + j + 1)
+    #         plt.plot(x_plot, y_plot, label=f'Component {k1 + j}')
+    #     plt.legend()
+    #     plt.tight_layout()
+    #     plt.show()
+    #     png_path = f'./results/{args.dataset}/{args.dist}_{args.k1}_{args.k2}_distribution.png'
+    #     if not os.path.exists(f'./results/{args.dataset}'):
+    #         os.makedirs(f'./results/{args.dataset}')
+    #     plt.savefig(png_path)
+    #     df = pd.DataFrame(plot_data).T
+    #     df.to_csv(f'./results/{args.dataset}/{args.dist}_{args.k1}_{args.k2}_distribution.csv', index=False)
 
     
 
@@ -92,6 +114,83 @@ def baseline_fn(baseline, dataset, lr, n_components, n_cauchy, seed, epoch, eta,
     times = np.quantile(t[e==1], horizons).tolist()
     out_risk = 1 - model.predict_survival(x_test, times)
     out_survival = model.predict_survival(x_test, times)
+
+
+    # whole_t = np.linspace(t[e==1].min(), t[e==1].max(), 10000).tolist()
+    # whole_survival = model.predict_survival(x[e==1], whole_t)
+    # mrl_list = []
+    # t_e = t[e==1]
+    # t_e_trun = t_e[t_e >= times[-1]]
+    # # return the index of overlapping part between t_e_trun and t, give me that function
+        
+    # index = np.where(np.isin(t_e, t_e_trun))[0]
+    
+    # for idx in index:
+    #     mrl = compute_mrl(times[-1], whole_survival[idx,:], np.array(whole_t))
+    #     mrl_list.append(mrl)
+    # mrl_arr = np.array(mrl_list)
+    
+    # gt_mrl = t_e_trun - times[-1]
+    # print(np.shape(mrl_arr) == np.shape(gt_mrl))
+    # plt.hist(mrl_arr, bins=100, alpha=0.5)
+    # plt.hist(gt_mrl, bins=100, alpha=0.5)
+    # plt.show()
+    # plt.savefig(f'{args.dataset}_mrl.png')
+    # import ipdb
+    # ipdb.set_trace()
+
+
+
+
+
+
+    # tail_strat = times[-1]
+    # print(tail_strat)
+    # print(times)
+    # tail_time = np.linspace(tail_strat, t[e==1].max(), 1000).tolist()
+    # tail_survival = np.mean(model.predict_survival(x_test, tail_time), axis=0)
+
+    # from lifelines import KaplanMeierFitter
+    # kmf = KaplanMeierFitter()
+    # kmf.fit(t, np.ones_like(t))
+    # kmf.plot_survival_function()
+
+    # plt.plot(tail_time, tail_survival)
+    # plt.show()
+    # plt.savefig(f'{args.dataset}_tail_survival.png')
+
+    # import ipdb
+    # ipdb.set_trace()
+
+    # survival_time = np.linspace(t[e==0].min(), t[e==1].max(), 5000).tolist()
+    # whole_survival = model.predict_survival(x_test, survival_time)
+
+    # for i in range(3):
+    #     survival_i = whole_survival[i+10,:]
+    #     delta_t = survival_time[1] - survival_time[0]
+    #     pdf = np.diff(survival_i) / delta_t
+
+
+    # # # # from lifelines import KaplanMeierFitter
+    # # # # kmf = KaplanMeierFitter()
+    # # # # kmf.fit(t, np.ones_like(t))
+    # # # # kmf.plot_survival_function()
+
+    #     plt.axis('off')
+    #     plt.plot(survival_time[0:-1], pdf, linewidth=10)
+    #     plt.xticks(size = 20)
+    #     plt.yticks(size = 20)
+    #     plt.tight_layout()
+    # plt.show()
+    # plt.savefig(f'{args.dataset}_whole_pdf.png')
+
+
+
+
+
+
+
+
     # print(out_survival.shape)
     # t_graph = np.linspace(t[e==1].min(), t[e==0].max(), 1000).tolist()
     # tr_graph = model.predict_survival(x_train, t_graph)
@@ -130,11 +229,11 @@ def baseline_fn(baseline, dataset, lr, n_components, n_cauchy, seed, epoch, eta,
     return cis, brs, roc_auc
     
 
-def result(n_run, model, dataset, lr, k1, k2, epoch, eta, edit_censor, censor_rate, dist):
+def result(n_run, model, dataset, lr, k1, k2, epoch, eta, edit_censor, censor_rate, dist, plot_dist = False):
     cis_list , brs_list, roc_aoc_list = [], [], []
     for j in range(n_run):
         seed = 42 + j 
-        cis, brs, roc_aoc = baseline_fn(model, dataset, lr, k1+k2, k2, seed, epoch, eta, edit_censor, censor_rate, dist)
+        cis, brs, roc_aoc = baseline_fn(model, dataset, lr, k1+k2, k2, seed, epoch, eta, edit_censor, censor_rate, dist, plot_dist)
         cis_list.append(cis)
         brs_list.append(brs)
         roc_aoc_list.append(roc_aoc)
@@ -157,7 +256,7 @@ if __name__ == "__main__":
     parse.add_argument('--dataset', '-d', type=str, default='support')
     parse.add_argument('--model', '-m', type=str, default='DDPSM')
     parse.add_argument('--n_run', '-n', type=int, default=5)
-    parse.add_argument('--epoch', '-e', type=int, default=100)
+    parse.add_argument('--epoch', '-e', type=int, default=200)
     parse.add_argument('--lr', type=float, default=1e-4)
     parse.add_argument('--censor_rate', type=float, default=0.9)
     parse.add_argument('--k1', type=int, default=2)
@@ -165,14 +264,15 @@ if __name__ == "__main__":
     parse.add_argument('--eta', type=float, default=10)
     parse.add_argument('--edit_censor', type=bool, default=False)
     parse.add_argument('--save_csv', type=bool, default=True)
-    parse.add_argument('--dist', type=str, default='Weibull')
+    parse.add_argument('--dist', type=str, default='LogNormal')
     parse.add_argument('--plot_dist', type=bool, default=True)
     args = parse.parse_args()
 
 
     # cis_list, brs_list , roc_aoc_list = result(10, 'DDPSM', 'mimic', 1e-4, 15, 5)
     if args.model in DSM_model:
-        cis_list, brs_list , roc_aoc_list = result(args.n_run, args.model, args.dataset , args.lr, args.k1, args.k2, args.epoch, args.eta, args.edit_censor, args.censor_rate, args.dist)
+        cis_list, brs_list , roc_aoc_list = result(args.n_run, args.model, args.dataset , args.lr, args.k1, args.k2, args.epoch, args.eta, 
+                                                   args.edit_censor, args.censor_rate, args.dist, args.plot_dist)
     # elif args.model == 'DeepHit':
     #     cis_list, brs_list, roc_auc_list = run_DeepHit(1234, args.dataset)
     # elif args.model == 'nfm':

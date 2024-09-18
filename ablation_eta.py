@@ -8,11 +8,11 @@ import os
 
 
 
-def result(n_run, model, dataset, lr, k1, k2, epoch, eta, edit_censor, censor_rate):
+def result(n_run, model, dataset, lr, k1, k2, epoch, eta, edit_censor, censor_rate, dist, plot_dist = False):
     cis_list , brs_list, roc_aoc_list = [], [], []
     for j in range(n_run):
         seed = 42 + j 
-        cis, brs, roc_aoc = baseline_fn(model, dataset, lr, k1+k2, k2, seed, epoch, eta, edit_censor, censor_rate)
+        cis, brs, roc_aoc = baseline_fn(model, dataset, lr, k1+k2, k2, seed, epoch, eta, edit_censor, censor_rate, dist, plot_dist)
         cis_list.append(cis)
         brs_list.append(brs)
         roc_aoc_list.append(roc_aoc)
@@ -26,7 +26,7 @@ def result(n_run, model, dataset, lr, k1, k2, epoch, eta, edit_censor, censor_ra
 def ablation_eta(n_run, dataset, k1, k2, lr, epoch, eta_list):
     cis_dict, brs_dict, roc_auc_dict = {}, {}, {}
     for eta in eta_list:
-        cis, brs, roc_auc = result(n_run, 'DDPSM', dataset , lr, k1+k2 , k2, epoch, eta, False, 0.9)
+        cis, brs, roc_auc = result(n_run, 'DDPSM', dataset , lr, k1+k2 , k2, epoch, eta, False, 0.9, 'LogNormal', False)
         cis_dict[eta] = cis
         brs_dict[eta] = brs
         roc_auc_dict[eta] = roc_auc
@@ -69,13 +69,13 @@ if __name__ == "__main__":
     args = parse.parse_args()
 
 
-    cis_dict, brs_dict, roc_auc_dict = ablation_eta(args.n_run, args.dataset, args.k1, args.k2, args.lr, args.epoch, [0.01, 0.1, 1, 10 ,100, 1000])
+    cis_dict, brs_dict, roc_auc_dict = ablation_eta(args.n_run, args.dataset, args.k1, args.k2, args.lr, args.epoch, [0.01, 0.1, 10 ,100, 1000])
     dirpath = '/home/r10user10/Documents/Jiacheng/dspm-auton-survival/ablation_study'+'/'+args.dataset
     if not os.path.exists(dirpath):
         os.makedirs(dirpath)
 
     if args.print:
-        plot_eta(cis_dict, [0.01, 0.1, 1, 10 ,100, 1000], dirpath)
+        plot_eta(cis_dict, [0.01, 0.1, 10 ,100, 1000], dirpath)
         print('print successfully')
 
     if args.save:

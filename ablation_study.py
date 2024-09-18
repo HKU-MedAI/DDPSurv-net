@@ -11,7 +11,7 @@ def result(n_run, model, dataset, lr, k1, k2, epoch, eta, edit_censor, censor_ra
     cis_list , brs_list, roc_aoc_list = [], [], []
     for j in range(n_run):
         seed = 42 + j 
-        cis, brs, roc_aoc = baseline_fn(model, dataset, lr, k1+k2, k2, seed, epoch, eta, edit_censor, censor_rate)
+        cis, brs, roc_aoc = baseline_fn(model, dataset, lr, k1+k2, k2, seed, epoch, eta, edit_censor, censor_rate, 'LogNormal', False)
         cis_list.append(cis)
         brs_list.append(brs)
         roc_aoc_list.append(roc_aoc)
@@ -31,7 +31,7 @@ def ablation_study(n_run, k1_range, k2_range, dataset, step_1, step_2, lr, epoch
     for i in range(1, k1_range+1, step_1):
         for j in range(1, k2_range+1, step_2):
             print(i, j)
-            cis_mean, brs_mean, roc_auc_mean, cis_std, brs_std, roc_aoc_std = result(n_run, 'DDPSM', dataset , lr, i+j , j, epoch, eta, False, 0.9)
+            cis_mean, brs_mean, roc_auc_mean, cis_std, brs_std, roc_aoc_std = result(n_run, 'DDPSM', dataset , lr, i , j, epoch, eta, False, 0.9)
             cis_mean_dict[(i,j)] = cis_mean
             brs_mean_dict[(i,j)] = brs_mean
             roc_auc_mean_dict[(i,j)] = roc_auc_mean
@@ -95,7 +95,7 @@ if __name__ == "__main__":
 
     parse.add_argument('--dataset', '-d', type=str, default='support')
     parse.add_argument('--model', '-m', type=str, default='DDPSM')
-    parse.add_argument('--epoch', '-e', type=int, default=100)
+    parse.add_argument('--epoch', '-e', type=int, default=200)
     parse.add_argument('--quantile', '-q', type=int, default=0)
     parse.add_argument('--lr', type=float, default=1e-4)
     parse.add_argument('--k1_range', type=int, default=2)
@@ -106,36 +106,42 @@ if __name__ == "__main__":
     parse.add_argument('--save', '-s', type=bool, default=True)
     parse.add_argument('--print', '-p', type=bool, default=True)
     parse.add_argument('--save_csv', type=bool, default=True)
-    parse.add_argument('--n_run', type=int, default=3)
+    parse.add_argument('--n_run', type=int, default=1)
     args = parse.parse_args()
 
 
     cis_mean_dict, brs_mean_dict, roc_auc_mean_dict, cis_std_dict, brs_std_dict, roc_auc_std_dict  = ablation_study(args.n_run, args.k1_range, args.k2_range, args.dataset, args.k1_step, args.k2_step, args.lr, args.epoch, args.eta)
-    print_k1_list = range(1, args.k1_range+1, args.k1_step)
-    print_k2_list = range(1, args.k2_range+1, 2)
+    # print_k1_list = range(1, args.k1_range+1, args.k1_step)
+    # print_k2_list = range(1, args.k2_range+1, 2)
     dirpath = '/home/r10user10/Documents/Jiacheng/dspm-auton-survival/ablation_study'+'/'+args.dataset
     if not os.path.exists(dirpath):
         os.makedirs(dirpath)
 
-    if args.print:
-        heatmap(cis_mean_dict, f'{args.dataset}_{args.lr}', print_k1_list, print_k2_list, args.quantile, dirpath)
-        print('print successfully')
+    # if args.print:
+    #     heatmap(cis_mean_dict, f'{args.dataset}_{args.lr}', print_k1_list, print_k2_list, args.quantile, dirpath)
+    #     print('print successfully')
 
-    if args.save:
-        np.save(dirpath+'/'+args.dataset+'_cis_mean_dict.npy', cis_mean_dict)
-        np.save(dirpath+'/'+args.dataset+'_brs_mean_dict.npy',brs_mean_dict)
-        np.save(dirpath+'/'+args.dataset+'_roc_auc_mean_dict.npy', roc_auc_mean_dict)
-        np.save(dirpath+'/'+args.dataset+'_cis_std_dict.npy', cis_std_dict)
-        np.save(dirpath+'/'+args.dataset+'_brs_std_dict.npy', brs_std_dict)
-        np.save(dirpath+'/'+args.dataset+'_roc_auc_std_dict.npy', roc_auc_std_dict)
-        print('save npy successfully')
+    # if args.save:
+    #     np.save(dirpath+'/'+args.dataset+'_cis_mean_dict.npy', cis_mean_dict)
+    #     np.save(dirpath+'/'+args.dataset+'_brs_mean_dict.npy',brs_mean_dict)
+    #     np.save(dirpath+'/'+args.dataset+'_roc_auc_mean_dict.npy', roc_auc_mean_dict)
+    #     np.save(dirpath+'/'+args.dataset+'_cis_std_dict.npy', cis_std_dict)
+    #     np.save(dirpath+'/'+args.dataset+'_brs_std_dict.npy', brs_std_dict)
+    #     np.save(dirpath+'/'+args.dataset+'_roc_auc_std_dict.npy', roc_auc_std_dict)
+    #     print('save npy successfully')
+
+    # sum_index = (1,1)
+    # for key in cis_mean_dict.keys():
+    #     if sum(cis_mean_dict[key]) > sum(cis_mean_dict[sum_index]):
+    #         sum_index = key
+    # print(sum_index)
 
     sum_index = (1,1)
     for key in cis_mean_dict.keys():
-        if sum(cis_mean_dict[key]) > sum(cis_mean_dict[sum_index]):
+        if cis_mean_dict[key][0] > cis_mean_dict[sum_index][0]:
             sum_index = key
     print(sum_index)
-
+    
     if args.save_csv:
         df = pd.DataFrame({'mean_c-index':cis_mean_dict[sum_index], 'std_c-index': cis_std_dict[sum_index],
                           'mean_brier_score': brs_mean_dict[sum_index][0], 'std_brier_score': brs_std_dict[sum_index][0]}, index=[0.25, 0.5, 0.75, 0.9])

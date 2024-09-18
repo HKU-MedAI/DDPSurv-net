@@ -26,11 +26,11 @@ def result(n_run, model, dataset, lr, k1, k2, epoch, eta, edit_censor, censor_ra
 def ablation_censor(model, n_run, dataset, k1, k2, lr, epoch, censor_list, dist):
     cis_dict, brs_dict, roc_auc_dict = {}, {}, {}
     for cr in censor_list:
-        cis, brs, roc_auc = result(n_run, model, dataset , lr, k1+k2 , k2, epoch, 10, True, cr, dist)
+        cis, brs, roc_auc = result(n_run, model, dataset , lr, k1 , k2, epoch, 10, True, cr, dist)
         cis_dict[cr] = cis
         brs_dict[cr] = brs
         roc_auc_dict[cr] = roc_auc
-    cis_def, brs_def, roc_auc_def = result(n_run, model, dataset , lr, k1+k2 , k2, epoch, 10, False, 0.9, dist)
+    cis_def, brs_def, roc_auc_def = result(n_run, model, dataset , lr, k1 , k2, epoch, 10, False, 0.9, dist)
     cis_dict['default'] = cis_def
     brs_dict['default'] = brs_def
     roc_auc_dict['default'] = roc_auc_def
@@ -63,18 +63,18 @@ if __name__ == "__main__":
 
     parse.add_argument('--model', '-m', type=str, default='DDPSM')
     parse.add_argument('--dataset', '-d', type=str, default='support')
-    parse.add_argument('--epoch', '-e', type=int, default=100)
+    parse.add_argument('--epoch', '-e', type=int, default=200)
     parse.add_argument('--quantile', '-q', type=int, default=0)
     parse.add_argument('--lr', type=float, default=1e-4)
     parse.add_argument('--k1', type=int, default=2)
     parse.add_argument('--k2', type=int, default=1)
     parse.add_argument('--save', '-s', type=bool, default=True)
     parse.add_argument('--print', '-p', type=bool, default=True)
-    parse.add_argument('--n_run', type=int, default=3)
+    parse.add_argument('--n_run', type=int, default=1)
     parse.add_argument('--dist', type=str, default='LogNormal')
     args = parse.parse_args()
 
-    censor_rate_list = [0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+    censor_rate_list = [(0.01* i + 0.22) for i in range(70)]
 
 
     cis_dict, brs_dict, roc_auc_dict = ablation_censor(args.model, args.n_run, args.dataset, args.k1, args.k2, args.lr, args.epoch, censor_rate_list, args.dist)
@@ -87,9 +87,9 @@ if __name__ == "__main__":
     #     print('print successfully')
 
     if args.save:
-        np.save(dirpath+'/'+f'{args.model}_'+'censor_cis_dict.npy', cis_dict)
-        np.save(dirpath+'/'+f'{args.model}_'+'censor_brs_dict.npy',brs_dict)
-        np.save(dirpath+'/'+f'{args.model}_'+'censor_roc_auc_dict.npy', roc_auc_dict)
+        np.save(dirpath+'/'+f'{args.model}_'+f'{args.k1}_{args.k2}_'+'censor_cis_dict.npy', cis_dict)
+        np.save(dirpath+'/'+f'{args.model}_'+f'{args.k1}_{args.k2}_'+'censor_brs_dict.npy',brs_dict)
+        np.save(dirpath+'/'+f'{args.model}_'+f'{args.k1}_{args.k2}_'+'censor_roc_auc_dict.npy', roc_auc_dict)
         # np.save(dirpath+'/'+args.dataset+'_cis_dict.npy', cis_dict)
         # np.save(dirpath+'/'+args.dataset+'_brs_dict.npy', brs_dict)
         # np.save(dirpath+'/'+args.dataset+'_roc_auc_dict.npy', roc_auc_dict)
