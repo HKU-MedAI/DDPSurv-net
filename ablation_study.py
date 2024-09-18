@@ -3,6 +3,7 @@ import numpy as np
 from dspm_dataset import support, synthetic, kkbox, mimic3, mimic4, metabric
 from baseline import baseline_fn 
 import os
+import wandb
 
 
 
@@ -30,6 +31,8 @@ def ablation_study(n_run, k1_range, k2_range, dataset, step_1, step_2, lr, epoch
     cis_std_dict, brs_std_dict, roc_auc_std_dict = {}, {}, {}
     for i in range(1, k1_range+1, step_1):
         for j in range(1, k2_range+1, step_2):
+            wandb.init(entity="", project="dspm", name=f'{dataset}_{lr}_{i}_{j}')
+            wandb.config = {'k1': i, 'k2': j}
             print(i, j)
             cis_mean, brs_mean, roc_auc_mean, cis_std, brs_std, roc_aoc_std = result(n_run, 'DDPSM', dataset , lr, i , j, epoch, eta, False, 0.9)
             cis_mean_dict[(i,j)] = cis_mean
@@ -38,6 +41,9 @@ def ablation_study(n_run, k1_range, k2_range, dataset, step_1, step_2, lr, epoch
             cis_std_dict[(i,j)] = cis_std
             brs_std_dict[(i,j)] = brs_std
             roc_auc_std_dict[(i,j)] = roc_aoc_std
+            wandb.log({'c-index_mean': cis_mean[0], 'brier_score_mean': brs_mean[0][0], 
+                       'c-index_std': cis_std[0], 'brier_score_std': brs_std[0][0]})
+            wandb.finish()
     return cis_mean_dict, brs_mean_dict, roc_auc_mean_dict, cis_std_dict, brs_std_dict, roc_auc_std_dict
 
 import matplotlib.pyplot as plt
@@ -93,7 +99,7 @@ def heatmap(dict, title, k1_list, k2_list, quantile, path):
 if __name__ == "__main__":
     parse = argparse.ArgumentParser(description='ablation study hyperparameter')
 
-    parse.add_argument('--dataset', '-d', type=str, default='support')
+    parse.add_argument('--dataset', '-d', type=str, default='synthetic')
     parse.add_argument('--model', '-m', type=str, default='DDPSM')
     parse.add_argument('--epoch', '-e', type=int, default=200)
     parse.add_argument('--quantile', '-q', type=int, default=0)

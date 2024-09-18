@@ -7,3 +7,4 @@ __pycache__/
 mimic3benchmarks
 mimiciv_benchmark
 nfm
+wandb/

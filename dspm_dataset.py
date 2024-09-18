@@ -76,7 +76,7 @@ def synthetic():
     e_test = outcomes_te['event'].values.astype(float)
     t_test = outcomes_te['time'].values
 
-    print(x_train.dtype, t_train.dtype, e_train.dtype)
+    # print(x_train.dtype, t_train.dtype, e_train.dtype)
     return x_train, t_train , e_train, x_test, t_test , e_test
 
 def kkbox():
