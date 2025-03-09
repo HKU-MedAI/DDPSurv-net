@@ -40,6 +40,71 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+# def log_cauchy(t, mu, sigma):
+#     # sigma = torch.exp(log_sigma).clamp(1e-5)
+
+#     f = - torch.log(t * torch.pi) + torch.log(sigma.clamp(1e-3)) - \
+#         torch.log(((torch.log(t) - mu) ** 2 + sigma ** 2).clamp(1e-10))
+#     # f = f.clamp(min=10 * np.finfo(float).eps)
+#     s = 1 / 2 - 1 / torch.pi * torch.arctan((torch.log(t) - mu) / sigma)
+
+#     s = torch.log(s.clamp(min=10 * np.finfo(float).eps))
+#     return f, s
+
+# def log_cauchy(t, mu, sigma):
+#     f = - torch.log(t * torch.pi) + torch.log(sigma.clamp(1e-3)) - \
+#         torch.log(((torch.log(t) - mu) ** 2 + sigma ** 2).clamp(1e-10))
+#     # f = f.clamp(min=10 * np.finfo(float).eps)
+#     s = 1 / 2 - 1 / torch.pi * torch.arctan((torch.log(t) - mu) / sigma)
+#     s = torch.log(s.clamp(min=10 * np.finfo(float).eps))
+#     return f, s
+
+# def log_cauchy(t, mu, log_sigma):
+#     sigma = torch.exp(log_sigma).clamp(1e-5)
+
+#     f = - torch.log(t * torch.pi) + log_sigma - \
+#         torch.log1p(((torch.log(t) - mu) ** 2 + sigma ** 2).clamp(1e-10))
+#     # f = f.clamp(min=10 * np.finfo(float).eps)
+#     s = 1 / 2 - 1 / torch.pi * torch.arctan((torch.log(t) - mu) / sigma)
+
+#     s = torch.log(s.clamp(min=10 * np.finfo(float).eps))
+#     return f, s
+
+
+# def lognormal(t, mu, sigma):
+#     # sigma = torch.exp(log_sigma).clamp(1e-5)
+
+#     f = - sigma - 0.5 * np.log(2 * np.pi)
+#     f = f - torch.div((torch.log(t) - mu) ** 2, 2. * torch.exp(sigma ** 2))
+#     s = torch.div(torch.log(t) - mu, torch.exp(sigma) * np.sqrt(2))
+#     s = 0.5 - 0.5 * torch.erf(s)
+#     s += 10 * np.finfo(float).eps
+#     s = torch.log(s)
+#     return f, s
+
+
+def log_cauchy(t, mu, log_sigma):
+    sigma = torch.exp(log_sigma).clamp(1e-5)
+
+    f = - torch.log(t * torch.pi) + log_sigma - \
+        torch.log1p(((torch.log(t) - mu) ** 2 + sigma ** 2).clamp(1e-10))
+    # f = f.clamp(min=10 * np.finfo(float).eps)
+    s = 1 / 2 - 1 / torch.pi * torch.arctan((torch.log(t) - mu) / sigma)
+
+    s = torch.log(s.clamp(min=10 * np.finfo(float).eps))
+    return f, s
+
+
+def lognormal(t, mu, log_sigma):
+    sigma = torch.exp(log_sigma).clamp(1e-5)
+
+    f = - torch.exp(log_sigma) - 0.5 * np.log(2 * np.pi)
+    f = f - torch.div((torch.log(t) - mu) ** 2, 2. * torch.exp(2 * sigma))
+    s = torch.div(torch.log(t) - mu, torch.exp(sigma) * np.sqrt(2))
+    s = 0.5 - 0.5 * torch.erf(s)
+    s += 10 * np.finfo(float).eps
+    s = torch.log(s)
+    return f, s
 
 def _normal_loss(model, t, e, risk='1'):
     shape, scale = model.get_shape_scale(risk)
@@ -191,28 +256,6 @@ def _conditional_normal_loss(model, x, t, e, elbo=True, risk='1'):
     return -ll / float(len(uncens) + len(cens))
 
 
-def log_cauchy(t, mu, log_sigma):
-    sigma = torch.exp(log_sigma).clamp(1e-5)
-
-    f = - torch.log(t * torch.pi) + log_sigma - \
-        torch.log1p(((torch.log(t) - mu) ** 2 + sigma ** 2).clamp(1e-10))
-    # f = f.clamp(min=10 * np.finfo(float).eps)
-    s = 1 / 2 - 1 / torch.pi * torch.arctan((torch.log(t) - mu) / sigma)
-
-    s = torch.log(s.clamp(min=10 * np.finfo(float).eps))
-    return f, s
-
-
-def lognormal(t, mu, log_sigma):
-    sigma = torch.exp(log_sigma).clamp(1e-5)
-
-    f = - torch.exp(log_sigma) - 0.5 * np.log(2 * np.pi)
-    f = f - torch.div((torch.log(t) - mu) ** 2, 2. * torch.exp(2 * sigma))
-    s = torch.div(torch.log(t) - mu, torch.exp(sigma) * np.sqrt(2))
-    s = 0.5 - 0.5 * torch.erf(s)
-    s += 10 * np.finfo(float).eps
-    s = torch.log(s)
-    return f, s
 
 
 def _conditional_lognormal_loss(model, x, t, e, elbo=True, risk='1'):
@@ -522,7 +565,7 @@ def _lognormal_cdf(model, x, t_horizon, risk='1'):
     squish = nn.LogSoftmax(dim=1)
 
     shape, scale, logits = model.forward(x, risk)
-    print(shape.device)
+
     logits = squish(logits)
 
     k_ = shape
@@ -546,23 +589,25 @@ def _lognormal_cdf(model, x, t_horizon, risk='1'):
             mu = k_[:, g]
             sigma = b_[:, g]
 
-            f = - sigma - 0.5 * np.log(2 * np.pi)
-            f = f - torch.div((torch.log(t) - mu) ** 2,
-                              2. * torch.exp(2 * sigma))
-            lpdfs.append(f)
+            # f = - sigma - 0.5 * np.log(2 * np.pi)
+            # f = f - torch.div((torch.log(t) - mu) ** 2,
+            #                   2. * torch.exp(2 * sigma))
+            # lpdfs.append(f)
+            f, s = lognormal(t, mu, sigma)
 
-            s = torch.div(torch.log(t) - mu, torch.exp(sigma) * np.sqrt(2))
-            s = 0.5 - 0.5 * torch.erf(s)
-            s += 10 * np.finfo(float).eps
-            s = torch.log(s)
+            # s = torch.div(torch.log(t) - mu, sigma * np.sqrt(2))
+            # s = 0.5 - 0.5 * torch.erf(s)
+            # s += 10 * np.finfo(float).eps
+            # s = torch.log(s)
             lcdfs.append(s)
 
         # CDF of log-Cauchy
         for g in range(k2):
             mu = k_[:, k1+g]
             sigma = b_[:, k1+g]
-            s = 1 / 2 - 1 / torch.pi * torch.arctan((torch.log(t) - mu) / sigma)
-            s = torch.log(s.clamp(min=10 * np.finfo(float).eps))
+            # s = 1 / 2 - 1 / torch.pi * torch.arctan((torch.log(t) - mu) / sigma)
+            f, s = log_cauchy(t, mu, sigma)
+            # s = torch.log(s.clamp(min=10 * np.finfo(float).eps))
             lcdfs.append(s)
 
         # lpdfs = torch.stack(lpdfs, dim=1)

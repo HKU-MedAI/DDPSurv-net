@@ -52,7 +52,7 @@ def get_optimizer(model, lr):
                               ' is not implemented')
 
 def pretrain_dpsm(model, t_train, e_train, t_valid, e_valid,
-                 n_iter=1000, lr=1e-2, thres=1e-4):
+                 n_iter=10000, lr=1e-2, thres=1e-4):
 
 
   premodel = DeepDPTorch(1, model.k, model.k2, 5,
@@ -136,7 +136,7 @@ def train_dpsm(model,
                           e_train_,
                           t_valid_,
                           e_valid_,
-                          n_iter=1000,
+                          n_iter=10000,
                           lr=1e-2,
                           thres=1e-4)
   # import ipdb

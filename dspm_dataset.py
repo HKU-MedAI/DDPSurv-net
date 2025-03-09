@@ -162,6 +162,15 @@ def mimic3():
     x_test = np.mean(x_test, axis=1)
     print(x_train.shape)
     return x_train, t_train , e_train, x_test, t_test , e_test
+
+def new():
+    x_train = np.load('datasets/new/synthetic_x_train_new.npy')
+    t_train = np.load('datasets/new/synthetic_t_train_new.npy')
+    e_train = np.load('datasets/new/synthetic_e_train_new.npy')
+    x_test = np.load('datasets/new/synthetic_x_test_new.npy')
+    t_test = np.load('datasets/new/synthetic_t_test_new.npy')
+    e_test = np.load('datasets/new/synthetic_e_test_new.npy')
+    return x_train, t_train , e_train, x_test, t_test , e_test
     
 
 def metabric():

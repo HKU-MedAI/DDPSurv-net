@@ -1,5 +1,6 @@
+
 import argparse
-from dspm_dataset import support, synthetic, kkbox, mimic4, mimic3, metabric, edit_censor_rate
+from dspm_dataset import support, synthetic, kkbox, mimic4, mimic3, metabric, edit_censor_rate, new
 import numpy as np
 import pandas as pd
 import numpy as np
@@ -26,17 +27,17 @@ def compute_mrl(tau, survival , t):
 
 def baseline_fn(baseline, dataset, lr, n_components, n_cauchy, seed, epoch, eta, edit_censor, censor_rate, dist, plot_dist = False):
     if baseline == 'DeepCox':
-        model = DeepCoxPH(layers=[100,100], random_seed = seed)
+        model = DeepCoxPH(layers=[1000, 1000], random_seed = seed)
     if baseline == 'DSM':
         model = DeepSurvivalMachines(k = n_components,
                                 distribution = dist,
-                                layers = [100,100], random_seed = seed)
+                                layers = [], random_seed = seed)
     if baseline == 'DCM':
-        model = DeepCoxMixtures(k = n_components, layers = [100,100], random_seed = seed)
+        model = DeepCoxMixtures(k = n_components, layers = [], random_seed = seed)
     if baseline == 'DDPSM':
         model = DeepDP(k= n_components, k2 = n_cauchy, eta=eta,
                distribution= dist,
-               layers=[100,100], random_seed = seed)
+               layers=[500,500], random_seed = seed)
 
     if dataset == 'support':
         x_train, t_train , e_train, x_test, t_test , e_test = support()
@@ -54,6 +55,8 @@ def baseline_fn(baseline, dataset, lr, n_components, n_cauchy, seed, epoch, eta,
         x_train, t_train , e_train, x_test, t_test , e_test = mimic3()
     if dataset == 'metabric':
         x_train, t_train , e_train, x_test, t_test , e_test = metabric()
+    if dataset == 'new':
+        x_train, t_train , e_train, x_test, t_test , e_test = new()
 
 
     if edit_censor:
@@ -64,9 +67,9 @@ def baseline_fn(baseline, dataset, lr, n_components, n_cauchy, seed, epoch, eta,
 
 
     model.fit(x_train, t_train, e_train, iters = epoch, learning_rate = lr)
-    shape, scale = model.show_distribution_params(x_train, risk='1')
-    shape = shape.cpu().detach().numpy().mean(axis=0)
-    scale = scale.cpu().detach().numpy().mean(axis=0)
+    # shape, scale = model.show_distribution_params(x_train, risk='1')
+    # shape = shape.cpu().detach().numpy().mean(axis=0)
+    # scale = scale.cpu().detach().numpy().mean(axis=0)
     # print(shape, np.exp(scale)) 
 
 
@@ -115,7 +118,6 @@ def baseline_fn(baseline, dataset, lr, n_components, n_cauchy, seed, epoch, eta,
     out_risk = 1 - model.predict_survival(x_test, times)
     out_survival = model.predict_survival(x_test, times)
 
-
     # whole_t = np.linspace(t[e==1].min(), t[e==1].max(), 10000).tolist()
     # whole_survival = model.predict_survival(x[e==1], whole_t)
     # mrl_list = []
@@ -154,16 +156,47 @@ def baseline_fn(baseline, dataset, lr, n_components, n_cauchy, seed, epoch, eta,
     # kmf = KaplanMeierFitter()
     # kmf.fit(t, np.ones_like(t))
     # kmf.plot_survival_function()
-
-    # plt.plot(tail_time, tail_survival)
+    # plt.plot(tail_time, tail_survival, label='tail prediction')
+    # plt.xticks(size = 20, fontweight='bold')
+    # plt.yticks(size = 20, fontweight='bold')
+    # plt.ylabel('Survival Probability', size=20, fontweight='bold')
+    # plt.xlabel('Time', size=20, fontweight='bold')
+    # plt.legend()
+    # plt.tight_layout()
     # plt.show()
     # plt.savefig(f'{args.dataset}_tail_survival.png')
 
     # import ipdb
     # ipdb.set_trace()
 
+    # tail_strat = times[-1]
+    # tail_time = np.linspace(tail_strat, t[e==1].max(), 1000).tolist()
     # survival_time = np.linspace(t[e==0].min(), t[e==1].max(), 5000).tolist()
-    # whole_survival = model.predict_survival(x_test, survival_time)
+    # tail_survival = np.mean(model.predict_survival(x_test, tail_time), axis=0)
+    # model_deepcox = DeepCoxPH(layers=[100,100], random_seed = seed)
+    # model_deepcox.fit(x_train, t_train, e_train, iters = epoch, learning_rate = lr)
+    # tail_deepcox = np.mean(model_deepcox.predict_survival(x_test, tail_time), axis=0)
+    # model_dcm = DeepCoxMixtures(k = n_components, layers = [100,100], random_seed = seed)
+    # model_dcm.fit(x_train, t_train, e_train, iters = epoch, learning_rate = lr)
+    # tail_dcm = np.mean(model_dcm.predict_survival(x_test, tail_time), axis=0)
+    # model_dsm = DeepSurvivalMachines(k = n_components,
+    #                             distribution = dist,
+    #                             layers = [100,100], random_seed = seed)
+    # model_dsm.fit(x_train, t_train, e_train, iters = epoch, learning_rate = lr)
+    # tail_dsm = np.mean(model_dsm.predict_survival(x_test, tail_time), axis=0)
+
+    # plt.plot(tail_time, tail_survival, label='DeepSurv tail')
+    # plt.plot(tail_time, tail_deepcox, label='DeepCox tail')
+    # plt.plot(tail_time, tail_dcm, label='DCM tail')
+    # plt.plot(tail_time, tail_dsm, label='DSM tail')
+    # plt.xticks(size = 20, fontweight='bold')
+    # plt.yticks(size = 20, fontweight='bold')
+    # plt.ylabel('Survival Probability', size=20, fontweight='bold')
+    # plt.xlabel('Time', size=20, fontweight='bold')
+    # plt.legend()
+    # plt.tight_layout()
+    # plt.show()
+    # plt.savefig(f'{args.dataset}_tail_survival.png')
 
     # for i in range(3):
     #     survival_i = whole_survival[i+10,:]
@@ -218,6 +251,7 @@ def baseline_fn(baseline, dataset, lr, n_components, n_cauchy, seed, epoch, eta,
     for i, _ in enumerate(times):
         cis.append(concordance_index_ipcw(et_train, et_test, out_risk[:, i], times[i])[0])
     brs.append(brier_score(et_train, et_test, out_survival, times)[1])
+    print(brier_score(et_train, et_test, out_survival, times))
     roc_auc = []
     for i, _ in enumerate(times):
         roc_auc.append(cumulative_dynamic_auc(et_train, et_test, out_risk[:, i], times[i])[0])
@@ -255,8 +289,8 @@ if __name__ == "__main__":
 
     parse.add_argument('--dataset', '-d', type=str, default='support')
     parse.add_argument('--model', '-m', type=str, default='DDPSM')
-    parse.add_argument('--n_run', '-n', type=int, default=5)
-    parse.add_argument('--epoch', '-e', type=int, default=200)
+    parse.add_argument('--n_run', '-n', type=int, default=3)
+    parse.add_argument('--epoch', '-e', type=int, default=100)
     parse.add_argument('--lr', type=float, default=1e-4)
     parse.add_argument('--censor_rate', type=float, default=0.9)
     parse.add_argument('--k1', type=int, default=2)
@@ -288,15 +322,15 @@ if __name__ == "__main__":
     brs_std = np.round(np.asarray(brs_list).std(axis=0),4).tolist()[0]
     print(cis_mean, cis_std, brs_mean, brs_std)
 
-    if args.save_csv:
-        df = pd.DataFrame({'mean_c-index':cis_mean, 'std_c-index': cis_std,
-                          'mean_brier_score': brs_mean, 'std_brier_score': brs_std}, index=[0.25, 0.5, 0.75, 0.9])
-        dir_path = f'./results/{args.dataset}/'
-        if not os.path.exists(dir_path):
-            os.makedirs(dir_path)
-        save_path = dir_path + f'{args.model}_{args.dataset}_{args.lr}_{args.k1}_{args.k2}.csv'
-        df.to_csv(save_path, index=False)
-        print(f"Save to {args.model}_{args.dataset}.csv")
+    # if args.save_csv:
+    #     df = pd.DataFrame({'mean_c-index':cis_mean, 'std_c-index': cis_std,
+    #                       'mean_brier_score': brs_mean, 'std_brier_score': brs_std}, index=[0.25, 0.5, 0.75, 0.9])
+    #     dir_path = f'./results/{args.dataset}/'
+    #     if not os.path.exists(dir_path):
+    #         os.makedirs(dir_path)
+    #     save_path = dir_path + f'{args.model}_{args.dataset}_{args.lr}_{args.k1}_{args.k2}.csv'
+    #     df.to_csv(save_path, index=False)
+    #     print(f"Save to {args.model}_{args.dataset}.csv")
 
 
 

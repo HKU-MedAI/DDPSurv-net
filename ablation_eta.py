@@ -65,7 +65,7 @@ if __name__ == "__main__":
     parse.add_argument('--k2', type=int, default=1)
     parse.add_argument('--save', '-s', type=bool, default=True)
     parse.add_argument('--print', '-p', type=bool, default=True)
-    parse.add_argument('--n_run', type=int, default=3)
+    parse.add_argument('--n_run', type=int, default=1)
     args = parse.parse_args()
 
 

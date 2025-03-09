@@ -30,8 +30,8 @@ def ablation_study(n_run, k1_range, k2_range, dataset, step_1, step_2, lr, epoch
     cis_mean_dict, brs_mean_dict, roc_auc_mean_dict = {}, {}, {}
     cis_std_dict, brs_std_dict, roc_auc_std_dict = {}, {}, {}
     for i in range(1, k1_range+1, step_1):
-        for j in range(1, k2_range+1, step_2):
-            wandb.init(entity="", project="dspm", name=f'{dataset}_{lr}_{i}_{j}')
+        for j in range(0, k2_range, step_2):
+            wandb.init(entity="", project=f'dspm_{dataset}', name=f'{lr}_{i}_{j}')
             wandb.config = {'k1': i, 'k2': j}
             print(i, j)
             cis_mean, brs_mean, roc_auc_mean, cis_std, brs_std, roc_aoc_std = result(n_run, 'DDPSM', dataset , lr, i , j, epoch, eta, False, 0.9)
@@ -41,8 +41,11 @@ def ablation_study(n_run, k1_range, k2_range, dataset, step_1, step_2, lr, epoch
             cis_std_dict[(i,j)] = cis_std
             brs_std_dict[(i,j)] = brs_std
             roc_auc_std_dict[(i,j)] = roc_aoc_std
-            wandb.log({'c-index_mean': cis_mean[0], 'brier_score_mean': brs_mean[0][0], 
-                       'c-index_std': cis_std[0], 'brier_score_std': brs_std[0][0]})
+            wandb.log({'c-index_25': cis_mean[0], 'brier_score_25': brs_mean[0][0], 
+                       'c-index_50': cis_mean[1], 'brier_score_50': brs_mean[0][1],
+                        'c-index_75': cis_mean[2], 'brier_score_75': brs_mean[0][2],
+                        'c-index_90': cis_mean[3], 'brier_score_90': brs_mean[0][3]
+                       })
             wandb.finish()
     return cis_mean_dict, brs_mean_dict, roc_auc_mean_dict, cis_std_dict, brs_std_dict, roc_auc_std_dict
 
@@ -127,14 +130,14 @@ if __name__ == "__main__":
     #     heatmap(cis_mean_dict, f'{args.dataset}_{args.lr}', print_k1_list, print_k2_list, args.quantile, dirpath)
     #     print('print successfully')
 
-    # if args.save:
-    #     np.save(dirpath+'/'+args.dataset+'_cis_mean_dict.npy', cis_mean_dict)
-    #     np.save(dirpath+'/'+args.dataset+'_brs_mean_dict.npy',brs_mean_dict)
-    #     np.save(dirpath+'/'+args.dataset+'_roc_auc_mean_dict.npy', roc_auc_mean_dict)
-    #     np.save(dirpath+'/'+args.dataset+'_cis_std_dict.npy', cis_std_dict)
-    #     np.save(dirpath+'/'+args.dataset+'_brs_std_dict.npy', brs_std_dict)
-    #     np.save(dirpath+'/'+args.dataset+'_roc_auc_std_dict.npy', roc_auc_std_dict)
-    #     print('save npy successfully')
+    if args.save:
+        np.save(dirpath+'/'+args.dataset+'_cis_mean_dict.npy', cis_mean_dict)
+        np.save(dirpath+'/'+args.dataset+'_brs_mean_dict.npy',brs_mean_dict)
+        np.save(dirpath+'/'+args.dataset+'_roc_auc_mean_dict.npy', roc_auc_mean_dict)
+        np.save(dirpath+'/'+args.dataset+'_cis_std_dict.npy', cis_std_dict)
+        np.save(dirpath+'/'+args.dataset+'_brs_std_dict.npy', brs_std_dict)
+        np.save(dirpath+'/'+args.dataset+'_roc_auc_std_dict.npy', roc_auc_std_dict)
+        print('save npy successfully')
 
     # sum_index = (1,1)
     # for key in cis_mean_dict.keys():
@@ -144,7 +147,7 @@ if __name__ == "__main__":
 
     sum_index = (1,1)
     for key in cis_mean_dict.keys():
-        if cis_mean_dict[key][0] > cis_mean_dict[sum_index][0]:
+        if cis_mean_dict[key][-1] > cis_mean_dict[sum_index][-1]:
             sum_index = key
     print(sum_index)
     

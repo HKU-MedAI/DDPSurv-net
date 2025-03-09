@@ -196,7 +196,7 @@ def result(n_run, dataset, lr):
     print(report_str)
     return cis_list, brs_list , roc_aoc_list
 
-cis_list, brs_list , roc_auc_list = result(5, 'mimic3', 1e-4)
+cis_list, brs_list , roc_auc_list = result(3, 'mimic4', 1e-4)
 
 # np.save('nfm_cis_3.npy', np.array(cis_list))
 # np.save('nfm_brs_3.npy', np.array(brs_list))

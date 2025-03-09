@@ -20,7 +20,7 @@ def cph(dataset):
         x_train, t_train , e_train, x_test, t_test , e_test = mimic4()  
         print(x_train.shape[-1])
     
-    cph = CoxPHFitter(penalizer=0.1)
+    cph = CoxPHFitter(penalizer=10000)
     # x_train = np.concatenate((x_train, np.expand_dims(e_train,axis=1)), axis=-1)
     # x_test  = np.concatenate((x_test, np.expand_dims(e_test,axis=1)), axis=-1)
     import pandas as pd
@@ -69,6 +69,6 @@ def cph(dataset):
         print("ROC AUC ", roc_auc[horizon[0]][0], "\n")
     return cis, brs, roc_auc
     
-cph('mimic')
+cph('support')
 
 

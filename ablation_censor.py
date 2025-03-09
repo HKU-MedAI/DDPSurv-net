@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from dspm_dataset import support, synthetic, kkbox, mimic3, mimic4, metabric
 from baseline import baseline_fn 
 import os
+import pandas as pd
 
 
 
@@ -16,10 +17,10 @@ def result(n_run, model, dataset, lr, k1, k2, epoch, eta, edit_censor, censor_ra
         cis_list.append(cis)
         brs_list.append(brs)
         roc_aoc_list.append(roc_aoc)
-        cis_mean = np.mean(np.array(cis_list), axis=0)
-        # print(cis_mean.shape)
-        brs_mean = np.mean(np.array(brs_list), axis=0)
-        roc_aoc_mean = np.mean(np.array(roc_aoc_list), axis=0)
+    cis_mean = np.mean(np.array(cis_list))
+    # print(cis_mean.shape)
+    brs_mean = np.mean(np.array(brs_list))
+    roc_aoc_mean = np.mean(np.array(roc_aoc_list))
 
     return cis_mean, brs_mean , roc_aoc_mean
 
@@ -35,26 +36,7 @@ def ablation_censor(model, n_run, dataset, k1, k2, lr, epoch, censor_list, dist)
     brs_dict['default'] = brs_def
     roc_auc_dict['default'] = roc_auc_def
     return cis_dict, brs_dict, roc_auc_dict
-
- 
-def plot_eta(dict, eta_list, dirpath):
-    horizon = [0.25, 0.5, 0.75, 0.9]
-    plt.figure(figsize=(8,6))
-    x = eta_list
-    plt.xlabel('eta')
-    plt.ylabel('C index')
-    plt.title('C index for different eta')
-    plt.xscale('log')
-    for quantile in range(4):
-        y = []
-        for eta in eta_list:
-            y.append(dict[eta][quantile])   
-        plt.plot(x, y, label='horizon='+str(horizon[quantile]))
-    plt.legend(bbox_to_anchor=(1.05,0.5), loc=6)
-    plt.savefig(dirpath + '/' + 'eta.png', bbox_inches='tight')
-    plt.show()
-    pass
-    
+   
         
 
 
@@ -74,34 +56,24 @@ if __name__ == "__main__":
     parse.add_argument('--dist', type=str, default='LogNormal')
     args = parse.parse_args()
 
-    censor_rate_list = [(0.01* i + 0.22) for i in range(70)]
+    censor_rate_list = [(0.1* i + 0.4) for i in range(6)]
 
-
-    cis_dict, brs_dict, roc_auc_dict = ablation_censor(args.model, args.n_run, args.dataset, args.k1, args.k2, args.lr, args.epoch, censor_rate_list, args.dist)
-    dirpath = '/home/r10user10/Documents/Jiacheng/dspm-auton-survival/ablation_study'+'/'+args.dataset
+    dirpath = f'/home/r10user10/Documents/Jiacheng/dspm-auton-survival/ablation_study/{args.dataset}/'
     if not os.path.exists(dirpath):
         os.makedirs(dirpath)
 
-    # if args.print:
-    #     plot_eta(cis_dict, [0.01, 0.1, 1, 10 ,100, 1000], dirpath)
-    #     print('print successfully')
 
-    if args.save:
-        np.save(dirpath+'/'+f'{args.model}_'+f'{args.k1}_{args.k2}_'+'censor_cis_dict.npy', cis_dict)
-        np.save(dirpath+'/'+f'{args.model}_'+f'{args.k1}_{args.k2}_'+'censor_brs_dict.npy',brs_dict)
-        np.save(dirpath+'/'+f'{args.model}_'+f'{args.k1}_{args.k2}_'+'censor_roc_auc_dict.npy', roc_auc_dict)
-        # np.save(dirpath+'/'+args.dataset+'_cis_dict.npy', cis_dict)
-        # np.save(dirpath+'/'+args.dataset+'_brs_dict.npy', brs_dict)
-        # np.save(dirpath+'/'+args.dataset+'_roc_auc_dict.npy', roc_auc_dict)
-        print('save npy successfully')
+    # save cis_dict to one single csv file where key as column name
+    file_name = dirpath + f'{args.k1}_{args.k2}_censor.csv'
 
-    # sum_index = 0.1
-    # for key in cis_dict.keys():
-    #     if sum(cis_dict[key]) > sum(cis_dict[sum_index]):
-    #         sum_index = key
-    # print(sum_index)
+    model_list = ['DDPSM', 'DSM', 'DCM']
+    df_cis = pd.DataFrame()
+    for model_name in model_list:
+        cis_dict, brs_dict, roc_auc_dict = ablation_censor(model_name, args.n_run, args.dataset, args.k1, args.k2, args.lr, args.epoch, censor_rate_list, args.dist)
+        # let cis_dict.keys() be the column name, cis_dict.values() be the value, model name as the index
+        df_cis = df_cis.append(pd.DataFrame(cis_dict, index=[model_name]))
+    
+    df_cis.to_csv(file_name)
 
-    # print(cis_dict[sum_index])
-    # print(brs_dict[sum_index])
-    # print(roc_auc_dict[sum_index])
-    # print(args.dataset, args.lr, args.k1, args.k2)
+    
+
