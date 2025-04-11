@@ -58,7 +58,7 @@ def pretrain_dpsm(model, t_train, e_train, t_valid, e_valid,
   premodel = DeepDPTorch(1, model.k, model.k2, 5,
                                        dist=model.dist,
                                        risks=model.risks,
-                                       optimizer=model.optimizer).cuda()
+                                       optimizer=model.optimizer)
   premodel.double()
 
   optimizer = get_optimizer(premodel, lr)

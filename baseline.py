@@ -282,6 +282,9 @@ def result(n_run, model, dataset, lr, k1, k2, epoch, eta, edit_censor, censor_ra
         std roc_aoc: {np.asarray(roc_aoc_list).std(axis=0)}
     """
     print(report_str)
+    with open("./results/results.txt", "a") as f:
+        f.write(report_str)
+        f.write("\n")
     return cis_list, brs_list , roc_aoc_list
 
 if __name__ == "__main__":
@@ -320,17 +323,16 @@ if __name__ == "__main__":
     cis_std = np.round(np.asarray(cis_list).std(axis=0),4).tolist()
     brs_mean = np.round(np.asarray(brs_list).mean(axis=0),4).tolist()[0]
     brs_std = np.round(np.asarray(brs_list).std(axis=0),4).tolist()[0]
-    print(cis_mean, cis_std, brs_mean, brs_std)
+    # print(cis_mean, cis_std, brs_mean, brs_std)
 
     # if args.save_csv:
-    #     df = pd.DataFrame({'mean_c-index':cis_mean, 'std_c-index': cis_std,
-    #                       'mean_brier_score': brs_mean, 'std_brier_score': brs_std}, index=[0.25, 0.5, 0.75, 0.9])
-    #     dir_path = f'./results/{args.dataset}/'
-    #     if not os.path.exists(dir_path):
-    #         os.makedirs(dir_path)
-    #     save_path = dir_path + f'{args.model}_{args.dataset}_{args.lr}_{args.k1}_{args.k2}.csv'
-    #     df.to_csv(save_path, index=False)
-    #     print(f"Save to {args.model}_{args.dataset}.csv")
+    df = pd.DataFrame({'mean_c-index':cis_mean, 'std_c-index': cis_std,
+                        'mean_brier_score': brs_mean, 'std_brier_score': brs_std}, index=[0.25, 0.5, 0.75, 0.9])
+    dir_path = f'./results/{args.dataset}/'
+    os.makedirs(dir_path, exist_ok=True)
+    save_path = dir_path + f'{args.model}_{args.dataset}_{args.lr}_{args.k1}_{args.k2}.csv'
+    df.to_csv(save_path, index=False)
+    print(f"Save to {args.model}_{args.dataset}.csv")
 
 
 

@@ -89,7 +89,7 @@ def create_representation(inputdim, layers, activation, bias=False):
         modules.append(act)
         prevdim = hidden
 
-    return nn.Sequential(*modules).cuda()
+    return nn.Sequential(*modules)
 
 
 class DeepDPTorch(torch.nn.Module):
@@ -230,9 +230,9 @@ class DeepDPTorch(torch.nn.Module):
     def _estimate_log_weights(self):
         digamma_sum = torch.digamma(
             self.gamma_1 + self.gamma_2
-        ).cuda()
-        digamma_a = torch.digamma(self.gamma_1).cuda()
-        digamma_b = torch.digamma(self.gamma_2).cuda()
+        )
+        digamma_a = torch.digamma(self.gamma_1)
+        digamma_b = torch.digamma(self.gamma_2)
 
         return (
                 digamma_a
@@ -252,7 +252,7 @@ class DeepDPTorch(torch.nn.Module):
         """
 
         gamma_2 = self.eta + np.hstack((np.cumsum(nk.detach().cpu().numpy()[::-1])[-2::-1], 0))
-        self.gamma_2 = torch.from_numpy(gamma_2).cuda()
+        self.gamma_2 = torch.from_numpy(gamma_2)
         self.gamma_1 = 1 + nk
 
     def get_shape_scale(self, risk='1'):

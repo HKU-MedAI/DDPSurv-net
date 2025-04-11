@@ -210,7 +210,7 @@ class DPSMBase():
                            temp=self.temp,
                            discount=self.discount,
                            optimizer=optimizer,
-                           risks=risks).cuda()
+                           risks=risks)
 
     def fit(self, x, t, e, vsize=0.15, val_data=None,
             iters=1, learning_rate=1e-3, batch_size=100,
@@ -313,7 +313,7 @@ class DPSMBase():
 
     def _preprocess_test_data(self, x):
         x = _dataframe_to_array(x)
-        return torch.from_numpy(x).cuda()
+        return torch.from_numpy(x.astype(np.double))
 
     def _preprocess_training_data(self, x, t, e, vsize, val_data, random_seed):
 
@@ -326,9 +326,9 @@ class DPSMBase():
         np.random.shuffle(idx)
         x_train, t_train, e_train = x[idx], t[idx], e[idx]
 
-        x_train = torch.from_numpy(x_train).double().cuda()
-        t_train = torch.from_numpy(t_train).double().cuda()
-        e_train = torch.from_numpy(e_train).double().cuda()
+        x_train = torch.from_numpy(x_train.astype(np.double)).double()
+        t_train = torch.from_numpy(t_train).double()
+        e_train = torch.from_numpy(e_train).double()
 
 
         if val_data is None:
@@ -348,9 +348,9 @@ class DPSMBase():
             t_val = _dataframe_to_array(t_val)
             e_val = _dataframe_to_array(e_val)
 
-            x_val = torch.from_numpy(x_val).double().cuda()
-            t_val = torch.from_numpy(t_val).double().cuda()
-            e_val = torch.from_numpy(e_val).double().cuda()
+            x_val = torch.from_numpy(x_val).double()
+            t_val = torch.from_numpy(t_val).double()
+            e_val = torch.from_numpy(e_val).double()
 
         return (x_train, t_train, e_train, x_val, t_val, e_val)
 
@@ -454,7 +454,7 @@ class DPSMBase():
         r"""Returns the estimated parameters of the underlying distributionfor the given risk.
         """
         if self.fitted:
-            shape, scale, _ = self.torch_model.forward(torch.tensor(x).cuda(), risk='1')
+            shape, scale, _ = self.torch_model.forward(torch.tensor(x), risk='1')
             return shape, scale
         else:
             raise Exception("The model has not been fitted yet. Please fit the " +

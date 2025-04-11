@@ -96,8 +96,8 @@ class DirichletProcess(nn.Module):
         self.phi = (torch.ones([self.batch_size, self.T]) / self.T).to(self.device)
 
         self.eta = eta
-        self.gamma_1 = torch.ones(self.T).cuda()
-        self.gamma_2 = (torch.ones(self.T) * eta).cuda()
+        self.gamma_1 = torch.ones(self.T)
+        self.gamma_2 = (torch.ones(self.T) * eta)
         self.params = nn.ParameterList([self.phi])
 
     def sample_beta(self, size):
@@ -105,7 +105,7 @@ class DirichletProcess(nn.Module):
         b = self.gamma_2.detach().cpu().numpy()
 
         samples = beta.rvs(a, b, size=(size, self.T))
-        samples = torch.from_numpy(samples).cuda()
+        samples = torch.from_numpy(samples)
 
         return samples
 

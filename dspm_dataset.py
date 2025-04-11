@@ -15,7 +15,7 @@ def support():
 
     features = Preprocessor().fit_transform(features, cat_feats=cat_feats, num_feats=num_feats)
     x, t, e = features.values, outcomes.time.values, outcomes.event.values
-
+    
     n = len(x)
 
     tr_size = int(n*0.80)
